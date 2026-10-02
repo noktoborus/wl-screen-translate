@@ -20,6 +20,7 @@ use crate::APP_ID;
 use crate::error::AppError;
 use crate::fonts::Fonts;
 use crate::gpu::ATLAS_SIDE;
+use crate::ocr::Ocr;
 use crate::paragraph::Paragraph;
 use crate::settings::{Direction, Settings};
 use crate::split::{self, Split, Unit};
@@ -93,6 +94,9 @@ pub struct App {
     active: usize,
     drag_start: Option<egui::Pos2>,
     region: Option<Rect>,
+    /// Where the screenshot was drawn when the region was recognised, to
+    /// recognise it again.
+    region_image: Option<Rect>,
     paragraphs: Vec<Paragraph>,
     /// The paragraphs cut as the settings say: the plates and their pieces.
     units: Vec<Unit>,
@@ -107,6 +111,7 @@ pub struct App {
 enum Pick {
     Language(Side),
     Split,
+    Ocr,
 }
 
 /// What the language window tells of the screenshot and the region, each
@@ -130,6 +135,7 @@ impl App {
         worker: Worker,
         fonts: Fonts,
     ) -> Self {
+        settings.fit_source();
         settings.remember_direction();
         Self {
             desktop: Some(screenshot),
@@ -150,6 +156,7 @@ impl App {
             active: 0,
             drag_start: None,
             region: None,
+            region_image: None,
             paragraphs: Vec::new(),
             units: Vec::new(),
             translations: Vec::new(),
@@ -261,6 +268,10 @@ impl App {
             languages::open_split(&mut self.menu, &self.settings);
             self.picking = Some(Pick::Split);
         }
+        if shown.ocr {
+            languages::open_ocr(&mut self.menu, &self.settings);
+            self.picking = Some(Pick::Ocr);
+        }
         if let Some(position) = shown.position {
             self.place_languages(context, monitor, position);
         }
@@ -278,21 +289,27 @@ impl App {
             context.send_viewport_cmd_to(ViewportId::ROOT, ViewportCommand::Close);
         }
         if let Some(direction) = shown.direction {
-            self.settings.source = direction.source;
-            self.settings.target = direction.target;
-            self.direction_changed();
+            self.set_direction(direction);
         }
         if let Some(chosen) = self.menu.show(context) {
             self.pick(chosen.id);
         }
     }
 
-    /// Sets what the menu was opened for to `id`: a language code or a
-    /// split.
+    /// Sets what the menu was opened for to `id`: a language code, a split
+    /// or a recogniser.
     fn pick(&mut self, id: String) {
-        let language = match self.picking.take() {
-            Some(Pick::Language(Side::Source)) => &mut self.settings.source,
-            Some(Pick::Language(Side::Target)) => &mut self.settings.target,
+        match self.picking.take() {
+            Some(Pick::Language(side)) => {
+                let mut direction = self.settings.direction();
+                match side {
+                    Side::Source => direction.source = id,
+                    Side::Target => direction.target = id,
+                }
+                if direction != self.settings.direction() {
+                    self.set_direction(direction);
+                }
+            }
             Some(Pick::Split) => {
                 if let Some(split) = Split::from_id(&id)
                     && split != self.settings.split
@@ -301,14 +318,44 @@ impl App {
                     self.cut();
                     self.retranslate();
                 }
-                return;
             }
-            None => return,
-        };
-        let code = id;
-        if *language != code {
-            *language = code;
-            self.direction_changed();
+            Some(Pick::Ocr) => {
+                if let Some(ocr) = Ocr::from_id(&id)
+                    && ocr != self.settings.ocr
+                {
+                    self.settings.ocr = ocr;
+                    if self.settings.fit_source() {
+                        self.settings.remember_direction();
+                    }
+                    self.save_settings();
+                    self.rerecognize();
+                }
+            }
+            None => {}
+        }
+    }
+
+    /// Takes `direction`, remembers it and translates with it; the region is
+    /// recognised again when PaddleOCR reads the new language of the text
+    /// with another model.
+    fn set_direction(&mut self, direction: Direction) {
+        let reread = self.settings.ocr == Ocr::PaddleOcr
+            && paddle_ocr_model(&self.settings.source) != paddle_ocr_model(&direction.source);
+        self.settings.source = direction.source;
+        self.settings.target = direction.target;
+        self.settings.remember_direction();
+        if reread {
+            self.save_settings();
+            self.rerecognize();
+        } else {
+            self.retranslate();
+        }
+    }
+
+    /// Recognises the region again, as the recogniser or its model changed.
+    fn rerecognize(&mut self) {
+        if let (Some(region), Some(image_rect)) = (self.region, self.region_image) {
+            self.recognize(image_rect, region);
         }
     }
 
@@ -413,12 +460,6 @@ impl App {
         rows
     }
 
-    /// Remembers the direction now in use and translates with it.
-    fn direction_changed(&mut self) {
-        self.settings.remember_direction();
-        self.retranslate();
-    }
-
     fn languages(&self) -> Languages {
         Languages {
             source: self.settings.source.clone(),
@@ -498,6 +539,7 @@ impl App {
     }
 
     fn recognize(&mut self, image_rect: Rect, region: Rect) {
+        self.region_image = Some(image_rect);
         let screenshot = &self.screens[self.active].image;
         let scale = screenshot.width() as f32 / image_rect.width();
         let bounds = Rect::from_min_size(
@@ -543,6 +585,7 @@ impl App {
             id,
             image,
             origin: pixels.min,
+            ocr: self.settings.ocr,
             split: self.settings.split,
             languages: self.languages(),
         });
@@ -645,6 +688,7 @@ impl App {
         }
         self.drag_start = None;
         self.region = None;
+        self.region_image = None;
         self.paragraphs.clear();
         self.cut();
         self.stats = Stats {
@@ -691,6 +735,11 @@ impl App {
             }
         }
     }
+}
+
+/// The PaddleOCR model that reads `language`, an NLLB code.
+fn paddle_ocr_model(language: &str) -> Option<&'static str> {
+    paddle_ocr::recognizer_for(language.rsplit('_').next().unwrap_or(language))
 }
 
 /// `elapsed` in milliseconds below a second, else in seconds.

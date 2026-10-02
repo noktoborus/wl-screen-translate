@@ -11,6 +11,7 @@ mod fonts;
 mod gpu;
 #[cfg(target_os = "linux")]
 mod monitor;
+mod ocr;
 #[cfg(target_os = "linux")]
 mod outputs;
 mod paragraph;

@@ -47,6 +47,7 @@ license.workspace = true
 
 [dependencies]
 screen-ai.workspace = true
+paddle-ocr.workspace = true
 nllb.workspace = true
 plate-menu.workspace = true
 directories.workspace = true

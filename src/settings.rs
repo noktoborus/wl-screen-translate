@@ -7,6 +7,7 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 
 use crate::error::{AppError, Result};
+use crate::ocr::Ocr;
 use crate::split::Split;
 
 /// The extension a settings file this version cannot read is kept aside under.
@@ -47,6 +48,9 @@ pub struct Settings {
     /// How the text is cut for translation.
     #[serde(default)]
     pub split: Split,
+    /// The recogniser of the text.
+    #[serde(default)]
+    pub ocr: Ocr,
 }
 
 fn default_source() -> String {
@@ -70,6 +74,7 @@ impl Default for Settings {
             recent: Vec::new(),
             translate: default_translate(),
             split: Split::default(),
+            ocr: Ocr::default(),
         }
     }
 }
@@ -93,6 +98,16 @@ impl Settings {
         self.recent.retain(|recent| *recent != direction);
         self.recent.insert(0, direction);
         self.recent.truncate(RECENT_DIRECTIONS);
+    }
+
+    /// Takes the default language of the text when the recogniser does not
+    /// read the one chosen; true if it did.
+    pub fn fit_source(&mut self) -> bool {
+        if self.ocr.reads(&self.source) {
+            return false;
+        }
+        self.source = default_source();
+        true
     }
 
     /// Reads the settings, or starts from the defaults.
@@ -151,6 +166,7 @@ mod tests {
             }],
             translate: false,
             split: Split::Paragraphs,
+            ocr: Ocr::PaddleOcr,
         };
         settings.save(&path).unwrap();
         assert_eq!(Settings::load(&path), settings);
@@ -189,6 +205,20 @@ mod tests {
         assert_eq!(settings.source, default_source());
         assert_eq!(settings.target, "fra_Latn");
         assert_eq!(settings.split, Split::Sentences);
+        assert_eq!(settings.ocr, Ocr::default());
+    }
+
+    #[test]
+    fn a_language_the_recogniser_does_not_read_is_replaced() {
+        let mut settings = Settings {
+            source: "amh_Ethi".into(),
+            ocr: Ocr::ScreenAi,
+            ..Settings::default()
+        };
+        assert!(!settings.fit_source());
+        settings.ocr = Ocr::PaddleOcr;
+        assert!(settings.fit_source());
+        assert_eq!(settings.source, default_source());
     }
 
     #[test]

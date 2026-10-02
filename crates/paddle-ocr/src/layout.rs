@@ -79,7 +79,10 @@ fn continues(end: &Rect, line: &Rect) -> bool {
     let height = end.height.min(line.height);
     let ratio = end.height.max(line.height) / height.max(1.0);
     let overlap = end.right().min(line.right()) - end.x.max(line.x);
-    gap < LINE_GAP * height && gap > -LINE_OVERLAP * height && ratio <= HEIGHT_RATIO && overlap > 0.0
+    gap < LINE_GAP * height
+        && gap > -LINE_OVERLAP * height
+        && ratio <= HEIGHT_RATIO
+        && overlap > 0.0
 }
 
 #[cfg(test)]
@@ -114,7 +117,11 @@ mod tests {
         ];
         assert_eq!(
             found(lines),
-            [("first".into(), 0), ("second".into(), 0), ("third".into(), 0)]
+            [
+                ("first".into(), 0),
+                ("second".into(), 0),
+                ("third".into(), 0)
+            ]
         );
     }
 

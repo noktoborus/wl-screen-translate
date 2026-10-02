@@ -53,7 +53,10 @@ pub fn boxes(detector: &mut Session, image: &RgbaImage) -> Result<Vec<Rect>> {
         &scaled
     };
     // Padded to the stride, not stretched, so the map is in scaled pixels.
-    let padded = [width.div_ceil(STRIDE) * STRIDE, height.div_ceil(STRIDE) * STRIDE];
+    let padded = [
+        width.div_ceil(STRIDE) * STRIDE,
+        height.div_ceil(STRIDE) * STRIDE,
+    ];
     let tensor = Tensor::from_array((
         [1usize, 3, padded[1] as usize, padded[0] as usize],
         planes(input, padded),

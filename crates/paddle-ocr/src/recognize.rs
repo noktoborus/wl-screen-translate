@@ -89,7 +89,12 @@ fn line(image: &RgbaImage, rect: Rect) -> RgbaImage {
     let height = (rect.height.round() as u32).clamp(1, image.height() - y);
     let cut = image::imageops::crop_imm(image, x, y, width, height).to_image();
     let scaled = (HEIGHT as f32 * width as f32 / height as f32).ceil() as u32;
-    image::imageops::resize(&cut, scaled.clamp(1, MAX_WIDTH), HEIGHT, FilterType::Triangle)
+    image::imageops::resize(
+        &cut,
+        scaled.clamp(1, MAX_WIDTH),
+        HEIGHT,
+        FilterType::Triangle,
+    )
 }
 
 /// The text of one line by greedy CTC: the likeliest class at each step,
@@ -99,13 +104,13 @@ fn decode(probabilities: &[f32], classes: usize, alphabet: &[String]) -> Option<
     let mut scores = Vec::new();
     let mut previous = 0;
     for step in probabilities.chunks_exact(classes) {
-        let (class, score) = step
-            .iter()
-            .copied()
-            .enumerate()
-            .fold((0, f32::MIN), |best, (class, score)| {
-                if score > best.1 { (class, score) } else { best }
-            });
+        let (class, score) =
+            step.iter()
+                .copied()
+                .enumerate()
+                .fold((0, f32::MIN), |best, (class, score)| {
+                    if score > best.1 { (class, score) } else { best }
+                });
         if class != 0
             && class != previous
             && let Some(letter) = alphabet.get(class - 1)

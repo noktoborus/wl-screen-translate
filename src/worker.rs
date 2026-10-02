@@ -10,6 +10,7 @@ use image::RgbaImage;
 
 use crate::cache::{Cache, Entry};
 use crate::error::{AppError, Result};
+use crate::ocr::{Ocr, Recognizers};
 use crate::paragraph::{self, Paragraph};
 use crate::paths::Paths;
 use crate::split::{self, Split};
@@ -33,6 +34,8 @@ pub enum Request {
         image: RgbaImage,
         /// Where the region starts in the screenshot.
         origin: Pos2,
+        /// The recogniser.
+        ocr: Ocr,
         /// How the text is cut for translation.
         split: Split,
         /// The languages to translate with.
@@ -127,7 +130,7 @@ impl Worker {
                 current: worker_current,
                 translate: worker_translate,
                 paths,
-                ocr: None,
+                recognizers: Recognizers::default(),
                 translator: None,
             };
             for job in jobs {
@@ -175,7 +178,7 @@ struct Engines {
     cache: Cache,
     current: Arc<AtomicU64>,
     translate: Arc<AtomicBool>,
-    ocr: Option<screen_ai::Engine>,
+    recognizers: Recognizers,
     translator: Option<nllb::Translator>,
 }
 
@@ -189,11 +192,12 @@ impl Engines {
                 id,
                 image,
                 origin,
+                ocr,
                 split,
                 languages,
             } => {
                 let started = Instant::now();
-                match self.recognize(&image, origin) {
+                match self.recognize(ocr, &image, origin, &languages.source) {
                     Ok(paragraphs) => {
                         let pieces = split::pieces(&paragraphs, split);
                         let translating = self.translate.load(Ordering::Relaxed);
@@ -237,28 +241,26 @@ impl Engines {
         cancelled
     }
 
-    fn recognize(&mut self, image: &RgbaImage, origin: Pos2) -> Result<Vec<Paragraph>> {
-        let engine = match &mut self.ocr {
-            Some(engine) => engine,
-            empty => {
-                log::info!("loading Screen AI from {}", self.paths.screen_ai.display());
-                let started = Instant::now();
-                let engine = screen_ai::Engine::load(&self.paths.screen_ai)
-                    .map_err(|source| AppError::OcrLoad { source })?;
-                log::info!("Screen AI loaded in {:?}", started.elapsed());
-                empty.insert(engine)
-            }
-        };
+    /// Recognises `image`, cut at `origin`, written in `language`, with
+    /// `ocr`.
+    fn recognize(
+        &mut self,
+        ocr: Ocr,
+        image: &RgbaImage,
+        origin: Pos2,
+        language: &str,
+    ) -> Result<Vec<Paragraph>> {
         log::info!(
-            "recognising {}x{} pixels at {:?}",
+            "recognising {}x{} pixels at {:?} with {}",
             image.width(),
             image.height(),
-            origin
+            origin,
+            ocr.name()
         );
         let started = Instant::now();
-        let lines = engine
-            .recognize(image)
-            .map_err(|source| AppError::Ocr { source })?;
+        let lines = self
+            .recognizers
+            .recognize(ocr, &self.paths, image, language)?;
         let paragraphs = paragraph::group(lines, origin);
         log::info!(
             "recognised {} paragraphs in {:?}",
@@ -350,13 +352,14 @@ mod tests {
             paths: Paths {
                 settings: dir.join("settings.yaml"),
                 screen_ai: dir.join("screen-ai"),
+                paddle_ocr: dir.join("paddle-ocr"),
                 nllb: dir.join("nllb"),
                 translations: dir.join("translations"),
             },
             cache: Cache::new(dir.join("translations")),
             current: Arc::new(AtomicU64::new(current)),
             translate: Arc::new(AtomicBool::new(true)),
-            ocr: None,
+            recognizers: Recognizers::default(),
             translator: None,
         }
     }

@@ -1,7 +1,8 @@
 //! Lines of the recogniser joined into the paragraphs that are translated.
 
 use eframe::egui::{Pos2, Rect, vec2};
-use screen_ai::Line;
+
+use crate::ocr::Line;
 
 /// A paragraph, in pixels of the screenshot.
 #[derive(Debug, Clone, PartialEq)]

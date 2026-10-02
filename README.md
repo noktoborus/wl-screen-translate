@@ -1,7 +1,8 @@
 # wl-screen-translate
 
 Translates text from the screen under Wayland: select a region, its text is
-recognised with Chrome Screen AI and translated offline with Meta NLLB-200.
+recognised with Chrome Screen AI or PaddleOCR and translated offline with Meta
+NLLB-200.
 
 ## Install
 
@@ -20,14 +21,22 @@ The program downloads nothing; the scripts put the models into
 |--------------------------------------------|-------------------------------|
 | `scripts/fetch-screen-ai.sh`               | `curl`, `jq`, `unzip`         |
 | `scripts/fetch-screen-ai.sh --from-chrome` | Screen AI in a Chrome profile |
+| `scripts/fetch-paddle-ocr.sh`              | `curl`, `tar`, ~130 MB        |
 | `scripts/fetch-nllb.sh`                    | `python3` with `venv`, ~3 GB  |
+
+One recogniser is enough. Screen AI is built for x86-64 only; PaddleOCR, the
+default on ARM, runs anywhere ONNX Runtime does but reads fewer scripts: Latin,
+Cyrillic, Greek, Arabic, Devanagari, Tamil, Telugu, Thai, Korean, Chinese and
+Japanese. `MODELS` picks the PaddleOCR recognisers fetched, see the script.
 
 The NLLB-200 weights are licensed CC-BY-NC 4.0, for non-commercial use only.
 
 ## Use
 
 Bind `wl-screen-translate` to a shortcut. Drag over text to translate. A right
-click drops the region, or quits when there is none; Esc quits.
+click drops the region, or quits when there is none; Esc quits. The recogniser
+is chosen under Settings in the language window; with PaddleOCR the languages
+of the text are those it reads.
 
 ## Development
 

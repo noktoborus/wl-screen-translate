@@ -6,21 +6,23 @@
 |----------------------|------------------------------------------------------|
 | `wl-screen-translate`| the binary: capture, interface, settings, worker      |
 | `crates/screen-ai`   | text recognition through the Screen AI library        |
+| `crates/paddle-ocr`  | text recognition with PaddleOCR through ONNX Runtime  |
 | `crates/nllb`        | translation with a CTranslate2 NLLB-200 model         |
 
 The library crates know nothing of each other, of egui or of the settings.
-Their surfaces are `crates/screen-ai/README.md` and `crates/nllb/README.md`.
+Their surfaces are `crates/screen-ai/README.md`, `crates/paddle-ocr/README.md`
+and `crates/nllb/README.md`.
 
 ## Threads
 
 | thread    | owns                                   | blocks on               |
 |-----------|----------------------------------------|-------------------------|
 | main      | the screenshot, the window, settings   | nothing after start     |
-| worker    | `screen_ai::Engine`, `nllb::Translator` | recognition, translation|
+| worker    | the recognisers, `nllb::Translator`    | recognition, translation|
 | fonts     | fontconfig, the font files mapped       | a letter without a font |
 
 The main thread captures the screen before the window opens, so the window is
-not in the screenshot. Both engines load on their first job: loading takes
+not in the screenshot. Every engine loads on its first job: loading takes
 seconds and the window should not wait for it.
 
 ## Data path
@@ -30,7 +32,7 @@ portal ──png──► RgbaImage ──crop per monitor──► textures (eg
                     │
           region ───┴─crop─► Request::Recognize ──► worker
                                                      │
-            Response::Recognized(paragraphs) ◄───────┤ screen_ai::Engine::recognize
+            Response::Recognized(paragraphs) ◄───────┤ ocr::Recognizers::recognize
             Response::Translated(piece) …    ◄───────┤ nllb::Translator::translate
             Response::Done                   ◄───────┘
 ```
@@ -62,8 +64,20 @@ one, answering and caching each, so the plates fill as the translation goes;
 the model is not loaded when every piece is cached. `Done` ends the job with
 its time, shown with the other statistics under the buttons.
 
+`src/ocr.rs` holds the recognisers: Screen AI and PaddleOCR, picked by the
+settings (`Ocr`, PaddleOCR by default on ARM, where Screen AI has no build).
+Each `Recognize` request names the one to use; each is loaded on first use and
+kept. PaddleOCR reads a script with a model of its own, taken from the
+language of the text; it reads fewer scripts than NLLB translates, so the menu
+of the language of the text and the recent directions list only the languages
+it reads, and a language it does not read is replaced by the default. A
+change of recogniser, or of the language of the text to one PaddleOCR reads
+with another model, recognises the region again.
+
 The recogniser returns lines. `src/paragraph.rs` joins them by block and
 paragraph, because a sentence split over lines translates badly line by line.
+Screen AI finds the paragraphs itself; PaddleOCR finds lines only, and its
+crate groups them by their layout.
 
 The portal returns every monitor in one image. On the first frame
 `src/monitor.rs` finds each monitor in the screenshot, laid out as the
@@ -73,8 +87,10 @@ monitor gets a fullscreen window (an immediate egui viewport, the root one on
 monitor 0) showing its own part. A region is dragged on one of them; its text
 is drawn there. The language window is drawn on the monitor the pointer was
 last over; a language is picked from a `plate-menu` (a crate of zyterm) opened
-over that monitor. Its copy button copies the translated text, or the
-recognised one when translation is off, and quits. Under Linux the copy starts the
+over that monitor. Under its Settings header are the split and the
+recogniser buttons, each opening its menu, and the statistics. Its copy button
+copies the translated text, or the recognised one when translation is off, and
+quits. Under Linux the copy starts the
 program again with `--serve-clipboard` (`src/clipboard.rs`): this background
 process sets the text with arboard, through data-control or, under GNOME,
 which has none, the X11 clipboard of XWayland, and serves it until something

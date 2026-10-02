@@ -74,6 +74,20 @@ pub enum AppError {
         #[source]
         source: screen_ai::Error,
     },
+    /// ONNX Runtime or a PaddleOCR model could not be loaded.
+    #[error("cannot load PaddleOCR")]
+    PaddleOcrLoad {
+        /// The engine error.
+        #[source]
+        source: paddle_ocr::Error,
+    },
+    /// Recognition with PaddleOCR failed.
+    #[error("recognition failed")]
+    PaddleOcr {
+        /// The engine error.
+        #[source]
+        source: paddle_ocr::Error,
+    },
     /// The translation model could not be loaded.
     #[error("cannot load the translation model")]
     TranslatorLoad {
@@ -109,7 +123,8 @@ impl AppError {
             Self::ScreenshotRead { .. } => "error.capture",
             Self::SettingsEncode { .. } | Self::SettingsWrite { .. } => "error.settings",
             Self::OcrLoad { .. } => "error.ocr_load",
-            Self::Ocr { .. } => "error.ocr",
+            Self::PaddleOcrLoad { .. } => "error.paddle_ocr_load",
+            Self::Ocr { .. } | Self::PaddleOcr { .. } => "error.ocr",
             Self::TranslatorLoad { .. } => "error.translator_load",
             Self::Translate { .. } => "error.translate",
             Self::Window { .. } => "error.window",

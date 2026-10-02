@@ -5,6 +5,7 @@ use eframe::egui::{self, Align2, Context, Pos2, Rect, pos2, vec2};
 use plate_menu::{MenuItem, PlateMenu};
 use rust_i18n::t;
 
+use crate::ocr::Ocr;
 use crate::settings::{Direction, Settings};
 use crate::split::Split;
 
@@ -34,6 +35,8 @@ pub struct Shown {
     pub copy: bool,
     /// The split button was clicked.
     pub split: bool,
+    /// The recogniser button was clicked.
+    pub ocr: bool,
     /// The close button of the window was clicked.
     pub closed: bool,
     /// The top left corner of the window, once it has been laid out.
@@ -60,6 +63,7 @@ pub fn window(
     let mut toggled = false;
     let mut copy = false;
     let mut split = false;
+    let mut ocr = false;
     let mut open = true;
     let window = egui::Window::new(t!("ui.languages"))
         .open(&mut open)
@@ -108,13 +112,14 @@ pub fn window(
                 let copy_text = t!("ui.copy");
                 let (_, copy_slot) = ui.allocate_space(vec2(button_width(ui, &copy_text), height));
                 let split_name = t!(format!("ui.split.{}", settings.split.id()));
-                // Named by the split, but kept open when it changes; closed at
-                // start, as egui keeps no memory between runs here.
-                egui::CollapsingHeader::new(split_name.as_ref())
-                    .id_salt("split")
+                let ocr_name = t!("ui.ocr", name = settings.ocr.name());
+                // Closed at start, as egui keeps no memory between runs here.
+                egui::CollapsingHeader::new(t!("ui.settings"))
+                    .id_salt("settings")
                     .default_open(false)
                     .show(ui, |ui| {
                         split = ui.button(split_name.as_ref()).clicked();
+                        ocr = ui.button(ocr_name.as_ref()).clicked();
                         egui::Grid::new("stats").num_columns(2).show(ui, |ui| {
                             for (name, value) in stats {
                                 ui.label(name);
@@ -133,9 +138,7 @@ pub fn window(
                     .inner
                     .clicked();
             });
-            if settings.recent.is_empty() {
-                return None;
-            }
+            recent_directions(settings).next()?;
             // Not a separator: one in a row takes the height left in the
             // window, which stretches it to the bottom of the screen.
             let (_, line) = ui.allocate_space(vec2(SEPARATOR_WIDTH, 0.0));
@@ -153,6 +156,7 @@ pub fn window(
         toggled,
         copy,
         split,
+        ocr,
         closed: !open,
         position: shown.map(|shown| shown.response.rect.min),
     }
@@ -164,7 +168,7 @@ fn recent(ui: &mut egui::Ui, settings: &Settings) -> Option<Direction> {
     let current = settings.direction();
     let mut clicked = None;
     ui.vertical(|ui| {
-        for direction in &settings.recent {
+        for direction in recent_directions(settings) {
             let text = format!(
                 "{} / {}",
                 local_name(&direction.source),
@@ -177,6 +181,14 @@ fn recent(ui: &mut egui::Ui, settings: &Settings) -> Option<Direction> {
         }
     });
     clicked
+}
+
+/// The recent directions from a language the recogniser reads.
+fn recent_directions(settings: &Settings) -> impl Iterator<Item = &Direction> {
+    settings
+        .recent
+        .iter()
+        .filter(|direction| settings.ocr.reads(&direction.source))
 }
 
 /// The width of a button with `text`, in points.
@@ -202,25 +214,40 @@ pub fn open_split(menu: &mut PlateMenu, settings: &Settings) {
     }
 }
 
+/// Opens `menu` on the recognisers, the one in use selected.
+pub fn open_ocr(menu: &mut PlateMenu, settings: &Settings) {
+    let items = Ocr::ALL
+        .iter()
+        .map(|ocr| {
+            MenuItem::new(ocr.id(), ocr.name()).detail(t!(format!("ui.ocr_detail.{}", ocr.id())))
+        })
+        .collect();
+    match menu.open_at(items, settings.ocr.id()) {
+        Ok(()) => menu.notice(t!("ui.pick_ocr")),
+        Err(error) => log::error!("recogniser menu: {error}"),
+    }
+}
+
 /// Opens `menu` on the languages of [`items`], the one in use for `side`
-/// selected.
+/// selected; the languages of the text are those the recogniser reads.
 pub fn open(menu: &mut PlateMenu, settings: &Settings, side: Side) {
-    let (current, notice) = match side {
-        Side::Source => (&settings.source, t!("ui.pick_source")),
-        Side::Target => (&settings.target, t!("ui.pick_target")),
+    let (current, notice, ocr) = match side {
+        Side::Source => (&settings.source, t!("ui.pick_source"), Some(settings.ocr)),
+        Side::Target => (&settings.target, t!("ui.pick_target"), None),
     };
-    match menu.open_at(items(), current) {
+    match menu.open_at(items(ocr), current) {
         Ok(()) => menu.notice(notice),
         Err(error) => log::error!("language menu: {error}"),
     }
 }
 
-/// An entry for each language: its name in its own script, with its name in
-/// the language of the interface and its code beside it; found by any of the
-/// three.
-fn items() -> Vec<MenuItem> {
+/// An entry for each language `ocr` reads, or each language without it: its
+/// name in its own script, with its name in the language of the interface
+/// and its code beside it; found by any of the three.
+fn items(ocr: Option<Ocr>) -> Vec<MenuItem> {
     nllb::LANGUAGES
         .iter()
+        .filter(|code| ocr.is_none_or(|ocr| ocr.reads(code)))
         .map(|code| {
             let name = nllb::autonym(code).unwrap_or(code);
             let local = local_name(code);
@@ -254,7 +281,7 @@ mod tests {
 
     /// The language chosen after typing `query` into the menu.
     fn found(query: &str) -> Option<String> {
-        let mut state = plate_menu::MenuState::new(items());
+        let mut state = plate_menu::MenuState::new(items(None));
         state.push_query(query);
         state.accept()
     }
@@ -271,12 +298,22 @@ mod tests {
 
     #[test]
     fn entries_name_the_language_in_the_interface_language() {
-        let german = items()
+        let german = items(None)
             .into_iter()
             .find(|item| item.id == "deu_Latn")
             .unwrap();
         assert_eq!(german.label, "Deutsch");
         assert_eq!(german.detail, "German · deu_Latn");
+    }
+
+    #[test]
+    fn paddle_ocr_lists_only_the_languages_it_reads() {
+        let codes = |ocr| -> Vec<String> { items(ocr).into_iter().map(|item| item.id).collect() };
+        let paddle = codes(Some(Ocr::PaddleOcr));
+        assert!(paddle.contains(&"rus_Cyrl".to_owned()));
+        assert!(!paddle.contains(&"amh_Ethi".to_owned()));
+        assert!(paddle.len() < codes(None).len());
+        assert_eq!(codes(Some(Ocr::ScreenAi)), codes(None));
     }
 
     #[test]

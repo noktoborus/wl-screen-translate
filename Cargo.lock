@@ -5913,6 +5913,7 @@ dependencies = [
  "log",
  "memmap2",
  "nllb",
+ "paddle-ocr",
  "plate-menu",
  "pollster",
  "rust-i18n",
