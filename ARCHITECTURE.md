@@ -61,8 +61,12 @@ longer than the limit: at the word boundary nearest it, so a word goes into
 this piece or the next, and between the letters of a word longer than the
 limit alone. The tokens are counted by the NLLB tokenizer, loaded alone
 (`nllb::Counter`), as the model gets them. Each part is a piece of its own,
-translated and cached alone; `Cut` gives the interface the pieces before the
-first translation, with how many the limit added, shown in the statistics.
+translated and cached alone, and a cut ends a plate: the plate is cut there
+too, each part drawn over the lines its text covers (`Paragraph::part`, a line
+shared by two parts split by the share of its letters). `Cut` gives the
+interface the plates and pieces before the first translation, with how many
+pieces the limit added, shown in the statistics. The text is cut so whether it
+is translated or not: with the translation off, `Cut` ends the job.
 
 Before translating, the worker looks each piece up in the cache
 (`src/cache.rs`): a file `<source>-<target>/<XXH3-128 of the text>` in the

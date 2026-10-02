@@ -372,20 +372,15 @@ impl App {
     }
 
     /// Turns the translation on, which translates the text shown, or off,
-    /// which shows the recognised text and stops a translation under way.
+    /// which shows the recognised text, cut by the token limit, and stops a
+    /// translation under way.
     fn toggle_translate(&mut self) {
         self.settings.translate = !self.settings.translate;
         self.worker.set_translate(self.settings.translate);
-        if self.settings.translate {
-            self.retranslate();
-            return;
+        if !self.settings.translate {
+            self.translations.clear();
         }
-        self.save_settings();
-        self.translations.clear();
-        // Paragraphs while busy: the job is past recognition, translating.
-        if self.busy && !self.paragraphs.is_empty() {
-            self.cancel_job("by turning the translation off");
-        }
+        self.retranslate();
     }
 
     /// The text of each plate: the translation of the pieces that have one,
@@ -532,22 +527,30 @@ impl App {
                     self.stats.recognition = Some(elapsed);
                     self.cut();
                     let cut = Some(self.cut_settings());
+                    // The worker cuts by the limit the job was sent with.
+                    let cutting = self.job_cut.as_ref().is_some_and(|job| job.2.is_some());
                     if !translating {
-                        self.busy = false;
-                        // Turned on after the worker had passed it by.
-                        if self.settings.translate {
-                            self.retranslate();
-                        }
-                    } else if self.job_cut != cut {
-                        // The languages, the split or the limit changed during
-                        // recognition.
+                        self.busy = cutting;
+                    }
+                    // Turned on after the worker had passed it by, or the
+                    // languages, the split or the limit changed during
+                    // recognition.
+                    if (!translating && self.settings.translate) || self.job_cut != cut {
                         self.retranslate();
                     }
                 }
-                Response::Cut { id, units, cuts } if id == self.job => {
+                Response::Cut {
+                    id,
+                    units,
+                    cuts,
+                    translating,
+                } if id == self.job => {
                     self.units = units;
                     self.translations.clear();
                     self.stats.token_cuts = cuts;
+                    if !translating {
+                        self.busy = false;
+                    }
                 }
                 Response::Translated { id, index, text } if id == self.job => {
                     // Turned off after the worker had started it.
@@ -627,18 +630,29 @@ impl App {
         });
     }
 
+    /// Cuts the recognised text again and translates it, as the settings
+    /// say; the worker cuts it by the token limit, whether it is translated
+    /// or not.
     fn retranslate(&mut self) {
         self.save_settings();
-        if !self.settings.translate || self.paragraphs.is_empty() {
+        // No paragraphs while busy: the job is recognising, and follows.
+        if self.paragraphs.is_empty() {
             return;
         }
-        // The worker cuts them by the token limit again.
         self.cut();
+        let token_limit = self.settings.token_limit();
+        if !self.settings.translate && token_limit.is_none() {
+            if self.busy {
+                self.cancel_job("as nothing is left to translate or cut");
+            }
+            self.stats.token_cuts = 0;
+            return;
+        }
         let id = self.start_job();
         self.worker.send(Request::Translate {
             id,
             units: self.units.clone(),
-            token_limit: self.settings.token_limit(),
+            token_limit,
             languages: self.languages(),
         });
     }

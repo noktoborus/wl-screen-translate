@@ -79,7 +79,8 @@ pub enum Response {
         translating: bool,
     },
     /// The plates and their pieces cut again by the token limit, before
-    /// any translation of the job: the pieces translated are these.
+    /// any translation of the job: the pieces translated are these. It is
+    /// sent whether the text is translated or not.
     Cut {
         /// The job.
         id: u64,
@@ -87,6 +88,8 @@ pub enum Response {
         units: Vec<Unit>,
         /// How many pieces more the limit made.
         cuts: usize,
+        /// A translation follows; else the job is over.
+        translating: bool,
     },
     /// The translation of one piece; the pieces come as they are translated,
     /// those of the cache first.
@@ -225,7 +228,9 @@ impl Engines {
                             elapsed: started.elapsed(),
                             translating,
                         });
-                        if !translating || self.cancelled(id, "after recognition") {
+                        // Cut by the token limit even when not translated.
+                        let more = translating || token_limit.is_some();
+                        if !more || self.cancelled(id, "after recognition") {
                             return;
                         }
                         (id, units, token_limit, languages)
@@ -243,11 +248,16 @@ impl Engines {
         let units = match token_limit {
             Some(max) => match self.limit(units, max) {
                 Ok((units, cuts)) => {
+                    let translating = self.translate.load(Ordering::Relaxed);
                     answer(Response::Cut {
                         id,
                         units: units.clone(),
                         cuts,
+                        translating,
                     });
+                    if !translating || self.cancelled(id, "after cutting") {
+                        return;
+                    }
                     units
                 }
                 Err(error) => return answer(Response::Failed { id, error }),
@@ -304,9 +314,9 @@ impl Engines {
         Ok(paragraphs)
     }
 
-    /// Cuts each piece of `units` longer than `max` tokens, and counts the
-    /// pieces it made more. The tokenizer is loaded on first use, without
-    /// the model.
+    /// Cuts each piece of `units` longer than `max` tokens, and the plates at
+    /// the cuts, and counts the pieces it made more. The tokenizer is loaded
+    /// on first use, without the model.
     fn limit(&mut self, units: Vec<Unit>, max: usize) -> Result<(Vec<Unit>, usize)> {
         let counter = match &mut self.counter {
             Some(counter) => counter,
@@ -318,20 +328,8 @@ impl Engines {
                 empty.insert(counter)
             }
         };
-        let mut cuts = 0;
-        let units = units
-            .into_iter()
-            .map(|unit| {
-                let mut pieces = Vec::with_capacity(unit.pieces.len());
-                for piece in &unit.pieces {
-                    let chunks = split::limit(piece, max, |text| counter.count(text))
-                        .map_err(|source| AppError::Translate { source })?;
-                    cuts += chunks.len() - 1;
-                    pieces.extend(chunks);
-                }
-                Ok(Unit { pieces, ..unit })
-            })
-            .collect::<Result<Vec<_>>>()?;
+        let (units, cuts) = split::limit_units(units, max, |text| counter.count(text))
+            .map_err(|source| AppError::Translate { source })?;
         if cuts > 0 {
             log::info!("{cuts} pieces more by the limit of {max} tokens");
         }
@@ -442,6 +440,7 @@ mod tests {
                     text: "Hello".into(),
                     rect: eframe::egui::Rect::NOTHING,
                     line_height: 10.0,
+                    lines: Vec::new(),
                 }],
                 Split::Sentences,
             ),

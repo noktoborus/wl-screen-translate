@@ -6,7 +6,7 @@ use eframe::egui::Rect;
 use serde::{Deserialize, Serialize};
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::paragraph::Paragraph;
+use crate::paragraph::{self, Paragraph};
 
 /// How the text is cut.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -67,6 +67,7 @@ pub fn units(paragraphs: &[Paragraph], split: Split) -> Vec<Unit> {
                     text: texts().collect::<Vec<_>>().join("\n"),
                     rect,
                     line_height,
+                    lines: paragraphs.iter().flat_map(|p| p.lines.clone()).collect(),
                 },
                 pieces: vec![texts().collect::<Vec<_>>().join(" ")],
             }]
@@ -139,6 +140,48 @@ pub fn limit<E>(
     Ok(chunks)
 }
 
+/// `units` with each piece longer than `max` tokens cut by [`limit`], and how
+/// many pieces more that made.
+///
+/// A cut ends a plate: the plate of a piece cut in two is cut in two as well,
+/// the pieces before the cut going with the first part, those after with the
+/// second, each drawn over the lines its text covers.
+pub fn limit_units<E>(
+    units: Vec<Unit>,
+    max: usize,
+    mut count: impl FnMut(&str) -> Result<usize, E>,
+) -> Result<(Vec<Unit>, usize), E> {
+    let mut cuts = 0;
+    let mut limited = Vec::with_capacity(units.len());
+    for unit in units {
+        // The pieces of each part of the plate.
+        let mut parts = vec![Vec::new()];
+        for piece in &unit.pieces {
+            for (index, chunk) in limit(piece, max, &mut count)?.into_iter().enumerate() {
+                if index > 0 {
+                    cuts += 1;
+                    parts.push(Vec::new());
+                }
+                parts.last_mut().unwrap().push(chunk);
+            }
+        }
+        if parts.len() == 1 {
+            limited.push(unit);
+            continue;
+        }
+        let mut first = 0;
+        for pieces in parts {
+            let end = first + pieces.iter().map(|p| paragraph::letters(p)).sum::<usize>();
+            limited.push(Unit {
+                paragraph: unit.paragraph.part(first..end),
+                pieces,
+            });
+            first = end;
+        }
+    }
+    Ok((limited, cuts))
+}
+
 /// The pieces of one plate joined back, as written in the language `code`:
 /// Chinese and Japanese put no space between sentences.
 pub fn join<'a>(pieces: impl IntoIterator<Item = &'a str>, code: &str) -> String {
@@ -162,6 +205,10 @@ mod tests {
             text: text.into(),
             rect: Rect::from_min_size(pos2(0.0, y), vec2(100.0, 10.0)),
             line_height: 10.0,
+            lines: vec![paragraph::LineBox {
+                rect: Rect::from_min_size(pos2(0.0, y), vec2(100.0, 10.0)),
+                letters: paragraph::letters(text),
+            }],
         }
     }
 
@@ -230,6 +277,35 @@ mod tests {
                 "cd".into()
             ])
         );
+    }
+
+    #[test]
+    fn a_cut_ends_a_plate() {
+        let paragraphs = [paragraph("Ab cdef. Gh.", 0.0), paragraph("Four.", 20.0)];
+        let units = units(&paragraphs, Split::Sentences);
+        let (limited, cuts) = limit_units(units, 6, letters).unwrap();
+        assert_eq!(cuts, 1);
+        let plates: Vec<_> = limited
+            .iter()
+            .map(|unit| (unit.paragraph.text.as_str(), unit.pieces.clone()))
+            .collect();
+        assert_eq!(
+            plates,
+            [
+                ("Ab", vec!["Ab".to_owned()]),
+                ("cdef. Gh.", vec!["cdef.".into(), "Gh.".into()]),
+                ("Four.", vec!["Four.".into()]),
+            ]
+        );
+        // "Ab" is 2 of the 10 letters of the line, 100 points wide.
+        assert_eq!(limited[0].paragraph.rect.width(), 20.0);
+        assert_eq!(limited[1].paragraph.rect.min.x, 20.0);
+        assert_eq!(limited[2], units_of(&paragraphs[1]));
+    }
+
+    /// The plate of `paragraph` alone, cut by sentence.
+    fn units_of(paragraph: &Paragraph) -> Unit {
+        units(std::slice::from_ref(paragraph), Split::Sentences).remove(0)
     }
 
     #[test]
