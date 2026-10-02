@@ -2770,7 +2770,7 @@ dependencies = [
 
 [[package]]
 name = "nllb"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "ct2rs",
  "thiserror 2.0.21",
@@ -3459,7 +3459,7 @@ dependencies = [
 
 [[package]]
 name = "paddle-ocr"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "image",
  "ort",
@@ -4160,7 +4160,7 @@ checksum = "d68f2ec51b097e4c1a75b681a8bec621909b5e91f15bb7b840c4f2f7b01148b2"
 
 [[package]]
 name = "screen-ai"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "image",
  "libloading 0.9.0",
@@ -4614,7 +4614,7 @@ dependencies = [
 
 [[package]]
 name = "tesseract"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "image",
  "libloading 0.9.0",
@@ -5912,7 +5912,7 @@ dependencies = [
 
 [[package]]
 name = "wl-screen-translate"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "arboard",
  "ashpd",
