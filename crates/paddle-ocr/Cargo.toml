@@ -1,0 +1,11 @@
+[package]
+name = "paddle-ocr"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Text recognition with PaddleOCR PP-OCRv5 models through ONNX Runtime"
+
+[dependencies]
+image.workspace = true
+ort.workspace = true
+thiserror.workspace = true

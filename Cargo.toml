@@ -1,5 +1,5 @@
 [workspace]
-members = [".", "crates/screen-ai", "crates/nllb"]
+members = [".", "crates/screen-ai", "crates/paddle-ocr", "crates/nllb"]
 resolver = "3"
 
 [workspace.package]
@@ -9,6 +9,7 @@ license = "MIT"
 
 [workspace.dependencies]
 screen-ai = { path = "crates/screen-ai" }
+paddle-ocr = { path = "crates/paddle-ocr" }
 nllb = { path = "crates/nllb" }
 plate-menu = { git = "https://github.com/noktoborus/zyterm", rev = "738d5bf67f96316ee91a76ad7cfb9b35a92017ae" }
 arboard = { version = "3.6.1", default-features = false, features = ["wayland-data-control"] }
@@ -20,6 +21,7 @@ image = { version = "0.25.10", default-features = false, features = ["png"] }
 libloading = "0.9.0"
 log = "0.4.34"
 memmap2 = "0.9.11"
+ort = { version = "2.0.0-rc.13", default-features = false, features = ["std", "load-dynamic", "api-27"] }
 pollster = "1.0.1"
 prost = "0.14.4"
 rust-i18n = "4.2.4"
