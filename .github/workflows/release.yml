@@ -1,0 +1,99 @@
+# Builds the program for Linux x86-64, Linux ARM64 and Windows x86-64. A tag
+# v* makes a release of the archives; a run started by hand keeps them as
+# artifacts of the run. The archives hold the download scripts, not the
+# models: their licences do not allow handing them on.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # The oldest images: the binary needs the glibc it was built with.
+          - target: x86_64-unknown-linux-gnu
+            runner: ubuntu-22.04
+          - target: aarch64-unknown-linux-gnu
+            runner: ubuntu-22.04-arm
+          - target: x86_64-pc-windows-msvc
+            runner: windows-2022
+    runs-on: ${{ matrix.runner }}
+    env:
+      NAME: wl-screen-translate-${{ github.ref_name }}-${{ matrix.target }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Packages
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends cmake pkg-config
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      # CTranslate2 takes minutes to build.
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Build
+        if: runner.os == 'Linux'
+        run: cargo build --release --locked
+
+      # CTranslate2 is built against the static C runtime on Windows.
+      - name: Build
+        if: runner.os == 'Windows'
+        env:
+          RUSTFLAGS: -C target-feature=+crt-static
+        run: cargo build --release --locked
+
+      - name: Package
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p "$NAME/scripts"
+          cp target/release/wl-screen-translate README.md "$NAME/"
+          cp scripts/*.sh "$NAME/scripts/"
+          # Screen AI has no build for ARM.
+          if [ "${{ matrix.target }}" = aarch64-unknown-linux-gnu ]; then
+            rm "$NAME/scripts/fetch-screen-ai.sh"
+          fi
+          tar -czf "$NAME.tar.gz" "$NAME"
+
+      - name: Package
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path "$env:NAME\scripts" | Out-Null
+          Copy-Item target\release\wl-screen-translate.exe, README.md "$env:NAME\"
+          Copy-Item scripts\*.ps1 "$env:NAME\scripts\"
+          Compress-Archive -Path $env:NAME -DestinationPath "$env:NAME.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.NAME }}
+          path: |
+            ${{ env.NAME }}.tar.gz
+            ${{ env.NAME }}.zip
+          if-no-files-found: error
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            *.tar.gz
+            *.zip

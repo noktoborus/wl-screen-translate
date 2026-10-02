@@ -23,8 +23,17 @@ pub const LIBRARY_NAMES: &[&str] = &["libtesseract-5.dll", "tesseract55.dll", "t
 pub const MODEL_EXTENSION: &str = "traineddata";
 /// Models of a model directory that are not languages.
 const NOT_LANGUAGES: &[&str] = &["osd", "equ"];
+/// Where the library is looked for when the system does not find it by name:
+/// none, the system's loader knows where libraries are.
+#[cfg(not(target_os = "windows"))]
+const LIBRARY_DIRECTORIES: &[&str] = &[];
+/// Where the library is looked for when the system does not find it by name:
+/// the folder of the installer of UB Mannheim, which is not on `PATH`.
+#[cfg(target_os = "windows")]
+const LIBRARY_DIRECTORIES: &[&str] = &[r"C:\Program Files\Tesseract-OCR"];
 /// Where distributions put the models, looked in when the directory given
 /// has none.
+#[cfg(not(target_os = "windows"))]
 const SYSTEM_DIRECTORIES: &[&str] = &[
     "/usr/share/tesseract/tessdata",
     "/usr/share/tesseract-ocr/5/tessdata",
@@ -32,6 +41,10 @@ const SYSTEM_DIRECTORIES: &[&str] = &[
     "/usr/share/tessdata",
     "/usr/local/share/tessdata",
 ];
+/// Where the installer of UB Mannheim puts the models, looked in when the
+/// directory given has none.
+#[cfg(target_os = "windows")]
+const SYSTEM_DIRECTORIES: &[&str] = &[r"C:\Program Files\Tesseract-OCR\tessdata"];
 /// The levels of the page iterator.
 const BLOCK: c_int = 0;
 const PARAGRAPH: c_int = 1;
@@ -87,6 +100,31 @@ pub fn languages(directory: &Path) -> Vec<String> {
         .collect();
     found.sort();
     found
+}
+
+/// The library `name`, as the system finds it, else in
+/// [`LIBRARY_DIRECTORIES`].
+fn open(name: &str) -> std::result::Result<Library, libloading::Error> {
+    unsafe { Library::new(name) }.or_else(|error| {
+        LIBRARY_DIRECTORIES
+            .iter()
+            .find_map(|directory| open_path(&Path::new(directory).join(name)).ok())
+            .ok_or(error)
+    })
+}
+
+#[cfg(not(target_os = "windows"))]
+fn open_path(path: &Path) -> std::result::Result<Library, libloading::Error> {
+    unsafe { Library::new(path) }
+}
+
+/// The libraries the library needs, such as Leptonica, are looked for
+/// beside it.
+#[cfg(target_os = "windows")]
+fn open_path(path: &Path) -> std::result::Result<Library, libloading::Error> {
+    use libloading::os::windows;
+    unsafe { windows::Library::load_with_flags(path, windows::LOAD_WITH_ALTERED_SEARCH_PATH) }
+        .map(Library::from)
 }
 
 type Handle = *mut c_void;
@@ -170,7 +208,7 @@ impl Engine {
     pub fn load(directory: &Path) -> Result<Self> {
         let mut error = None;
         let library = LIBRARY_NAMES.iter().find_map(|name| {
-            unsafe { Library::new(*name) }
+            open(name)
                 .map_err(|source| error = Some(Error::Load { name, source }))
                 .ok()
         });
