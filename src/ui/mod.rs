@@ -348,11 +348,11 @@ impl App {
     }
 
     /// Takes `direction`, remembers it and translates with it; the region is
-    /// recognised again when PaddleOCR reads the new language of the text
-    /// with another model.
+    /// recognised again when the recogniser reads the new language of the
+    /// text with another model.
     fn set_direction(&mut self, direction: Direction) {
-        let reread = self.settings.ocr == Ocr::PaddleOcr
-            && paddle_ocr_model(&self.settings.source) != paddle_ocr_model(&direction.source);
+        let ocr = self.settings.ocr;
+        let reread = ocr.model(&self.settings.source) != ocr.model(&direction.source);
         self.settings.source = direction.source;
         self.settings.target = direction.target;
         self.settings.remember_direction();
@@ -769,11 +769,6 @@ impl App {
             }
         }
     }
-}
-
-/// The PaddleOCR model that reads `language`, an NLLB code.
-fn paddle_ocr_model(language: &str) -> Option<&'static str> {
-    paddle_ocr::recognizer_for(language.rsplit('_').next().unwrap_or(language))
 }
 
 /// `elapsed` in milliseconds below a second, else in seconds.

@@ -88,6 +88,20 @@ pub enum AppError {
         #[source]
         source: paddle_ocr::Error,
     },
+    /// Tesseract or the model of a language could not be loaded.
+    #[error("cannot load Tesseract")]
+    TesseractLoad {
+        /// The library error.
+        #[source]
+        source: tesseract::Error,
+    },
+    /// Recognition with Tesseract failed.
+    #[error("recognition failed")]
+    Tesseract {
+        /// The library error.
+        #[source]
+        source: tesseract::Error,
+    },
     /// The translation model could not be loaded.
     #[error("cannot load the translation model")]
     TranslatorLoad {
@@ -124,7 +138,8 @@ impl AppError {
             Self::SettingsEncode { .. } | Self::SettingsWrite { .. } => "error.settings",
             Self::OcrLoad { .. } => "error.ocr_load",
             Self::PaddleOcrLoad { .. } => "error.paddle_ocr_load",
-            Self::Ocr { .. } | Self::PaddleOcr { .. } => "error.ocr",
+            Self::TesseractLoad { .. } => "error.tesseract_load",
+            Self::Ocr { .. } | Self::PaddleOcr { .. } | Self::Tesseract { .. } => "error.ocr",
             Self::TranslatorLoad { .. } => "error.translator_load",
             Self::Translate { .. } => "error.translate",
             Self::Window { .. } => "error.window",

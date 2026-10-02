@@ -421,6 +421,7 @@ mod tests {
                 settings: dir.join("settings.yaml"),
                 screen_ai: dir.join("screen-ai"),
                 paddle_ocr: dir.join("paddle-ocr"),
+                tesseract: dir.join("tesseract"),
                 nllb: dir.join("nllb"),
                 translations: dir.join("translations"),
             },

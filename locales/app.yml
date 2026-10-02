@@ -36,6 +36,9 @@ ui.ocr_detail.paddle-ocr:
 ui.token_limit:
   en: Token limit
   ru: Ограничение токенов
+ui.ocr_detail.tesseract:
+  en: of the system · installed languages
+  ru: системный · установленные языки
 ui.pick_split:
   en: How to cut the text for translation
   ru: Как делить текст для перевода
@@ -102,6 +105,9 @@ error.ocr_load:
 error.paddle_ocr_load:
   en: PaddleOCR could not be loaded. Check its files, see README.md.
   ru: Не удалось загрузить PaddleOCR. Проверьте его файлы, см. README.md.
+error.tesseract_load:
+  en: Tesseract or the model of the language could not be loaded. See README.md.
+  ru: Не удалось загрузить Tesseract или модель языка. См. README.md.
 error.ocr:
   en: The text could not be recognised.
   ru: Не удалось распознать текст.

@@ -18,6 +18,7 @@ mod paragraph;
 mod paths;
 mod settings;
 mod split;
+mod tessdata;
 mod ui;
 mod worker;
 
@@ -67,6 +68,7 @@ fn main() -> ExitCode {
 
 fn run() -> Result<()> {
     let paths = Paths::resolve()?;
+    tessdata::scan(&paths.tesseract);
     let settings = Settings::load(&paths.settings);
     let started = std::time::Instant::now();
     let screenshot = capture::screen()?;

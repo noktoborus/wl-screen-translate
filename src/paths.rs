@@ -13,6 +13,8 @@ const SETTINGS_FILE: &str = "settings.yaml";
 const SCREEN_AI_DIR: &str = "screen-ai";
 /// The ONNX Runtime and PaddleOCR model directory in the data directory.
 const PADDLE_OCR_DIR: &str = "paddle-ocr";
+/// The Tesseract model directory in the data directory.
+const TESSERACT_DIR: &str = "tesseract";
 /// The NLLB model directory in the data directory.
 const NLLB_DIR: &str = "nllb";
 /// The translation cache directory in the temporary directory.
@@ -27,6 +29,8 @@ pub struct Paths {
     pub screen_ai: PathBuf,
     /// ONNX Runtime and the PaddleOCR models.
     pub paddle_ocr: PathBuf,
+    /// The Tesseract models, unless the system's are used.
+    pub tesseract: PathBuf,
     /// The CTranslate2 NLLB model and its tokenizer.
     pub nllb: PathBuf,
     /// The translations already made, see [`crate::cache`].
@@ -41,6 +45,7 @@ impl Paths {
             settings: dirs.config_dir().join(SETTINGS_FILE),
             screen_ai: dirs.data_dir().join(SCREEN_AI_DIR),
             paddle_ocr: dirs.data_dir().join(PADDLE_OCR_DIR),
+            tesseract: dirs.data_dir().join(TESSERACT_DIR),
             nllb: dirs.data_dir().join(NLLB_DIR),
             translations: temporary_dir(&dirs).join(TRANSLATIONS_DIR),
         })

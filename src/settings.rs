@@ -184,7 +184,7 @@ mod tests {
             }],
             translate: false,
             split: Split::Paragraphs,
-            ocr: Ocr::PaddleOcr,
+            ocr: Ocr::Paddle,
             limit_tokens: true,
             token_limit: 200,
         };
@@ -238,7 +238,7 @@ mod tests {
             ..Settings::default()
         };
         assert!(!settings.fit_source());
-        settings.ocr = Ocr::PaddleOcr;
+        settings.ocr = Ocr::Paddle;
         assert!(settings.fit_source());
         assert_eq!(settings.source, default_source());
     }

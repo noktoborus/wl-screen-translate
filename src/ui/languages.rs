@@ -343,7 +343,7 @@ mod tests {
     #[test]
     fn paddle_ocr_lists_only_the_languages_it_reads() {
         let codes = |ocr| -> Vec<String> { items(ocr).into_iter().map(|item| item.id).collect() };
-        let paddle = codes(Some(Ocr::PaddleOcr));
+        let paddle = codes(Some(Ocr::Paddle));
         assert!(paddle.contains(&"rus_Cyrl".to_owned()));
         assert!(!paddle.contains(&"amh_Ethi".to_owned()));
         assert!(paddle.len() < codes(None).len());
