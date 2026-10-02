@@ -33,6 +33,9 @@ ui.ocr_detail.screen-ai:
 ui.ocr_detail.paddle-ocr:
   en: PP-OCRv5 · fewer languages
   ru: PP-OCRv5 · меньше языков
+ui.token_limit:
+  en: Token limit
+  ru: Ограничение токенов
 ui.pick_split:
   en: How to cut the text for translation
   ru: Как делить текст для перевода
@@ -66,6 +69,9 @@ ui.stats.paragraphs:
 ui.stats.sentences:
   en: Sentences
   ru: Предложения
+ui.stats.token_cuts:
+  en: Cuts by tokens
+  ru: Делений по токенам
 ui.stats.translation:
   en: Translation time
   ru: Время перевода

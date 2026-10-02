@@ -13,7 +13,7 @@ use crate::error::{AppError, Result};
 use crate::ocr::{Ocr, Recognizers};
 use crate::paragraph::{self, Paragraph};
 use crate::paths::Paths;
-use crate::split::{self, Split};
+use crate::split::{self, Split, Unit};
 
 /// The languages of one translation.
 #[derive(Debug, Clone)]
@@ -38,15 +38,19 @@ pub enum Request {
         ocr: Ocr,
         /// How the text is cut for translation.
         split: Split,
+        /// The most tokens of a piece, if they are limited.
+        token_limit: Option<usize>,
         /// The languages to translate with.
         languages: Languages,
     },
-    /// Translate pieces of a text already recognised.
+    /// Translate the pieces of a text already recognised.
     Translate {
         /// The job.
         id: u64,
-        /// The pieces, as [`split::pieces`] cuts them.
-        pieces: Vec<String>,
+        /// The plates and their pieces, as [`split::units`] cuts them.
+        units: Vec<Unit>,
+        /// The most tokens of a piece, if they are limited.
+        token_limit: Option<usize>,
         /// The languages to translate with.
         languages: Languages,
     },
@@ -73,6 +77,16 @@ pub enum Response {
         elapsed: Duration,
         /// A translation follows: translating was on after recognition.
         translating: bool,
+    },
+    /// The plates and their pieces cut again by the token limit, before
+    /// any translation of the job: the pieces translated are these.
+    Cut {
+        /// The job.
+        id: u64,
+        /// The plates and their pieces.
+        units: Vec<Unit>,
+        /// How many pieces more the limit made.
+        cuts: usize,
     },
     /// The translation of one piece; the pieces come as they are translated,
     /// those of the cache first.
@@ -132,6 +146,7 @@ impl Worker {
                 paths,
                 recognizers: Recognizers::default(),
                 translator: None,
+                counter: None,
             };
             for job in jobs {
                 engines.run(job, &|response| {
@@ -180,6 +195,8 @@ struct Engines {
     translate: Arc<AtomicBool>,
     recognizers: Recognizers,
     translator: Option<nllb::Translator>,
+    /// The tokenizer alone, to cut pieces by the token limit.
+    counter: Option<nllb::Counter>,
 }
 
 impl Engines {
@@ -187,19 +204,20 @@ impl Engines {
         if self.cancelled(job.id(), "before it started") {
             return;
         }
-        let (id, pieces, languages) = match job {
+        let (id, units, token_limit, languages) = match job {
             Request::Recognize {
                 id,
                 image,
                 origin,
                 ocr,
                 split,
+                token_limit,
                 languages,
             } => {
                 let started = Instant::now();
                 match self.recognize(ocr, &image, origin, &languages.source) {
                     Ok(paragraphs) => {
-                        let pieces = split::pieces(&paragraphs, split);
+                        let units = split::units(&paragraphs, split);
                         let translating = self.translate.load(Ordering::Relaxed);
                         answer(Response::Recognized {
                             id,
@@ -210,17 +228,33 @@ impl Engines {
                         if !translating || self.cancelled(id, "after recognition") {
                             return;
                         }
-                        (id, pieces, languages)
+                        (id, units, token_limit, languages)
                     }
                     Err(error) => return answer(Response::Failed { id, error }),
                 }
             }
             Request::Translate {
                 id,
-                pieces,
+                units,
+                token_limit,
                 languages,
-            } => (id, pieces, languages),
+            } => (id, units, token_limit, languages),
         };
+        let units = match token_limit {
+            Some(max) => match self.limit(units, max) {
+                Ok((units, cuts)) => {
+                    answer(Response::Cut {
+                        id,
+                        units: units.clone(),
+                        cuts,
+                    });
+                    units
+                }
+                Err(error) => return answer(Response::Failed { id, error }),
+            },
+            None => units,
+        };
+        let pieces: Vec<String> = units.into_iter().flat_map(|unit| unit.pieces).collect();
         let started = Instant::now();
         match self.translate(id, &pieces, &languages, answer) {
             Ok(true) => answer(Response::Done {
@@ -268,6 +302,40 @@ impl Engines {
             started.elapsed()
         );
         Ok(paragraphs)
+    }
+
+    /// Cuts each piece of `units` longer than `max` tokens, and counts the
+    /// pieces it made more. The tokenizer is loaded on first use, without
+    /// the model.
+    fn limit(&mut self, units: Vec<Unit>, max: usize) -> Result<(Vec<Unit>, usize)> {
+        let counter = match &mut self.counter {
+            Some(counter) => counter,
+            empty => {
+                let started = Instant::now();
+                let counter = nllb::Counter::load(&self.paths.nllb)
+                    .map_err(|source| AppError::TranslatorLoad { source })?;
+                log::info!("NLLB tokenizer loaded in {:?}", started.elapsed());
+                empty.insert(counter)
+            }
+        };
+        let mut cuts = 0;
+        let units = units
+            .into_iter()
+            .map(|unit| {
+                let mut pieces = Vec::with_capacity(unit.pieces.len());
+                for piece in &unit.pieces {
+                    let chunks = split::limit(piece, max, |text| counter.count(text))
+                        .map_err(|source| AppError::Translate { source })?;
+                    cuts += chunks.len() - 1;
+                    pieces.extend(chunks);
+                }
+                Ok(Unit { pieces, ..unit })
+            })
+            .collect::<Result<Vec<_>>>()?;
+        if cuts > 0 {
+            log::info!("{cuts} pieces more by the limit of {max} tokens");
+        }
+        Ok((units, cuts))
     }
 
     /// Answers the pieces in the cache, then translates the others one by
@@ -361,13 +429,22 @@ mod tests {
             translate: Arc::new(AtomicBool::new(true)),
             recognizers: Recognizers::default(),
             translator: None,
+            counter: None,
         }
     }
 
     fn translate(id: u64) -> Request {
         Request::Translate {
             id,
-            pieces: vec!["Hello".into()],
+            units: split::units(
+                &[Paragraph {
+                    text: "Hello".into(),
+                    rect: eframe::egui::Rect::NOTHING,
+                    line_height: 10.0,
+                }],
+                Split::Sentences,
+            ),
+            token_limit: None,
             languages: Languages {
                 source: "eng_Latn".into(),
                 target: "rus_Cyrl".into(),
@@ -382,6 +459,7 @@ mod tests {
             answers.borrow_mut().push(match response {
                 Response::Translated { id, .. } => (id, true),
                 Response::Recognized { id, .. }
+                | Response::Cut { id, .. }
                 | Response::Done { id, .. }
                 | Response::Failed { id, .. } => (id, false),
             })

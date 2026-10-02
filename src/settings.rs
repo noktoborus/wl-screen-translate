@@ -51,6 +51,13 @@ pub struct Settings {
     /// The recogniser of the text.
     #[serde(default)]
     pub ocr: Ocr,
+    /// Whether a piece longer than [`Settings::token_limit`] is cut.
+    #[serde(default)]
+    pub limit_tokens: bool,
+    /// The most tokens of a piece given to the translator, kept while the
+    /// limit is off.
+    #[serde(default = "default_token_limit")]
+    pub token_limit: usize,
 }
 
 fn default_source() -> String {
@@ -59,6 +66,10 @@ fn default_source() -> String {
 
 fn default_target() -> String {
     "rus_Cyrl".into()
+}
+
+fn default_token_limit() -> usize {
+    512
 }
 
 fn default_translate() -> bool {
@@ -75,6 +86,8 @@ impl Default for Settings {
             translate: default_translate(),
             split: Split::default(),
             ocr: Ocr::default(),
+            limit_tokens: false,
+            token_limit: default_token_limit(),
         }
     }
 }
@@ -98,6 +111,11 @@ impl Settings {
         self.recent.retain(|recent| *recent != direction);
         self.recent.insert(0, direction);
         self.recent.truncate(RECENT_DIRECTIONS);
+    }
+
+    /// The most tokens of a piece, when they are limited.
+    pub fn token_limit(&self) -> Option<usize> {
+        self.limit_tokens.then_some(self.token_limit)
     }
 
     /// Takes the default language of the text when the recogniser does not
@@ -167,6 +185,8 @@ mod tests {
             translate: false,
             split: Split::Paragraphs,
             ocr: Ocr::PaddleOcr,
+            limit_tokens: true,
+            token_limit: 200,
         };
         settings.save(&path).unwrap();
         assert_eq!(Settings::load(&path), settings);
@@ -206,6 +226,8 @@ mod tests {
         assert_eq!(settings.target, "fra_Latn");
         assert_eq!(settings.split, Split::Sentences);
         assert_eq!(settings.ocr, Ocr::default());
+        assert_eq!(settings.token_limit(), None);
+        assert_eq!(settings.token_limit, 512);
     }
 
     #[test]

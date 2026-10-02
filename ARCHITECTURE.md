@@ -54,7 +54,15 @@ The text is translated in pieces, cut by `src/split.rs` as the split button
 of the language window says: the whole text (one plate over the region), each
 paragraph, or each sentence of a paragraph (Unicode sentence bounds). The
 interface and the worker cut the paragraphs with the same function; a
-`Translate` request carries the pieces.
+`Translate` request carries the plates and their pieces.
+
+When the token limit of the Settings is on, the worker cuts again each piece
+longer than the limit: at the word boundary nearest it, so a word goes into
+this piece or the next, and between the letters of a word longer than the
+limit alone. The tokens are counted by the NLLB tokenizer, loaded alone
+(`nllb::Counter`), as the model gets them. Each part is a piece of its own,
+translated and cached alone; `Cut` gives the interface the pieces before the
+first translation, with how many the limit added, shown in the statistics.
 
 Before translating, the worker looks each piece up in the cache
 (`src/cache.rs`): a file `<source>-<target>/<XXH3-128 of the text>` in the

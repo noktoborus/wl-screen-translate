@@ -16,6 +16,37 @@ pub use languages::{LANGUAGES, autonym};
 pub const TOKENIZER_FILE: &str = "tokenizer.json";
 /// The token that ends a source sentence.
 const END_OF_SENTENCE: &str = "</s>";
+/// The tokens a text is framed with: its language code and the end.
+const FRAME: usize = 2;
+/// The fewest tokens a translation may run to, as CTranslate2 allows by
+/// default.
+const MIN_DECODING: usize = 256;
+/// The most tokens a translation may run to: the positions of the model.
+const MAX_DECODING: usize = 1024;
+
+/// The tokenizer of a model alone: it counts tokens without loading the model.
+pub struct Counter {
+    tokenizer: Tokenizer,
+}
+
+impl Counter {
+    /// Loads `tokenizer.json` from a model directory.
+    pub fn load(directory: &Path) -> Result<Self> {
+        let path = directory.join(TOKENIZER_FILE);
+        let tokenizer =
+            Tokenizer::from_file(&path).map_err(|source| Error::Tokenizer { path, source })?;
+        Ok(Self { tokenizer })
+    }
+
+    /// The tokens of `text` the model is given, with its frame.
+    pub fn count(&self, text: &str) -> Result<usize> {
+        let encoding = self
+            .tokenizer
+            .encode(text, false)
+            .map_err(|source| Error::Encode { source })?;
+        Ok(encoding.len() + FRAME)
+    }
+}
 
 /// A loaded model and its tokenizer.
 pub struct Translator {
@@ -26,9 +57,7 @@ pub struct Translator {
 impl Translator {
     /// Loads a CTranslate2 model directory that also holds `tokenizer.json`.
     pub fn load(directory: &Path) -> Result<Self> {
-        let path = directory.join(TOKENIZER_FILE);
-        let tokenizer =
-            Tokenizer::from_file(&path).map_err(|source| Error::Tokenizer { path, source })?;
+        let Counter { tokenizer } = Counter::load(directory)?;
         let model = Model::new(directory, &Config::default()).map_err(|source| Error::Model {
             path: directory.to_path_buf(),
             source: source.into(),
@@ -53,14 +82,15 @@ impl Translator {
             .map(|text| self.tokens(text, source))
             .collect::<Result<Vec<_>>>()?;
         let prefixes = vec![vec![target]; texts.len()];
+        // Twice the longest source, so a translation is not cut short.
+        let longest = sources.iter().map(Vec::len).max().unwrap_or(0);
+        let options = TranslationOptions {
+            max_decoding_length: (2 * longest).clamp(MIN_DECODING, MAX_DECODING),
+            ..TranslationOptions::default()
+        };
         let results = self
             .model
-            .translate_batch_with_target_prefix(
-                &sources,
-                &prefixes,
-                &TranslationOptions::default(),
-                None,
-            )
+            .translate_batch_with_target_prefix(&sources, &prefixes, &options, None)
             .map_err(|source| Error::Translate {
                 source: source.into(),
             })?;
@@ -78,7 +108,7 @@ impl Translator {
             .tokenizer
             .encode(text, false)
             .map_err(|source| Error::Encode { source })?;
-        let mut tokens = Vec::with_capacity(encoding.len() + 2);
+        let mut tokens = Vec::with_capacity(encoding.len() + FRAME);
         tokens.push(language.to_owned());
         tokens.extend_from_slice(encoding.get_tokens());
         tokens.push(END_OF_SENTENCE.to_owned());

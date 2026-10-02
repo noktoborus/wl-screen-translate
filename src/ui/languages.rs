@@ -12,6 +12,9 @@ use crate::split::Split;
 /// The distance of the window from the top right corner, in points, until it
 /// is moved.
 const MARGIN: f32 = 16.0;
+/// The bounds of the token limit: the shortest piece worth translating and
+/// the positions of the model.
+const TOKEN_LIMITS: std::ops::RangeInclusive<usize> = 16..=1024;
 /// The width taken by the line between the languages and the recent
 /// directions, in points.
 const SEPARATOR_WIDTH: f32 = 6.0;
@@ -37,6 +40,12 @@ pub struct Shown {
     pub split: bool,
     /// The recogniser button was clicked.
     pub ocr: bool,
+    /// The token limit switch was clicked.
+    pub limit_toggled: bool,
+    /// The token limit shown now, when it was changed.
+    pub token_limit: Option<usize>,
+    /// The change of the token limit is over: dragged or typed.
+    pub token_limit_done: bool,
     /// The close button of the window was clicked.
     pub closed: bool,
     /// The top left corner of the window, once it has been laid out.
@@ -64,6 +73,9 @@ pub fn window(
     let mut copy = false;
     let mut split = false;
     let mut ocr = false;
+    let mut limit_toggled = false;
+    let mut token_limit = None;
+    let mut token_limit_done = false;
     let mut open = true;
     let window = egui::Window::new(t!("ui.languages"))
         .open(&mut open)
@@ -120,6 +132,25 @@ pub fn window(
                     .show(ui, |ui| {
                         split = ui.button(split_name.as_ref()).clicked();
                         ocr = ui.button(ocr_name.as_ref()).clicked();
+                        ui.horizontal(|ui| {
+                            limit_toggled = ui
+                                .selectable_label(settings.limit_tokens, t!("ui.token_limit"))
+                                .clicked();
+                            if !settings.limit_tokens {
+                                return;
+                            }
+                            let mut value = settings.token_limit;
+                            // Typed digits count once the number is entered.
+                            let field = egui::DragValue::new(&mut value)
+                                .range(TOKEN_LIMITS)
+                                .update_while_editing(false);
+                            let response = ui.add(field);
+                            if value != settings.token_limit {
+                                token_limit = Some(value);
+                            }
+                            token_limit_done = (response.changed() && !response.dragged())
+                                || response.drag_stopped();
+                        });
                         egui::Grid::new("stats").num_columns(2).show(ui, |ui| {
                             for (name, value) in stats {
                                 ui.label(name);
@@ -157,6 +188,9 @@ pub fn window(
         copy,
         split,
         ocr,
+        limit_toggled,
+        token_limit,
+        token_limit_done,
         closed: !open,
         position: shown.map(|shown| shown.response.rect.min),
     }

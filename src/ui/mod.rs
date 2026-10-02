@@ -87,8 +87,8 @@ pub struct App {
     menu: PlateMenu,
     picking: Option<Pick>,
     job: u64,
-    /// The direction and the split the job was sent with.
-    job_cut: Option<(Direction, Split)>,
+    /// The direction, the split and the token limit the job was sent with.
+    job_cut: Option<(Direction, Split, Option<usize>)>,
     busy: bool,
     /// The screen the region, the text and an error are on.
     active: usize,
@@ -124,6 +124,8 @@ struct Stats {
     selected: Option<[u32; 2]>,
     recognition: Option<Duration>,
     translation: Option<Duration>,
+    /// How many pieces more the token limit made.
+    token_cuts: usize,
 }
 
 impl App {
@@ -277,6 +279,16 @@ impl App {
         }
         if shown.toggled {
             self.toggle_translate();
+        }
+        if shown.limit_toggled {
+            self.settings.limit_tokens = !self.settings.limit_tokens;
+            self.retranslate();
+        }
+        if let Some(limit) = shown.token_limit {
+            self.settings.token_limit = limit;
+        }
+        if shown.token_limit_done {
+            self.retranslate();
         }
         if shown.copy
             && let Some(text) = self.copied_text()
@@ -448,16 +460,32 @@ impl App {
             Split::Paragraphs => Some(("ui.stats.paragraphs", self.paragraphs.len())),
             Split::Sentences => Some((
                 "ui.stats.sentences",
-                self.units.iter().map(|unit| unit.pieces.len()).sum(),
+                self.units
+                    .iter()
+                    .map(|unit| unit.pieces.len())
+                    .sum::<usize>()
+                    .saturating_sub(self.stats.token_cuts),
             )),
         };
         if let Some((key, count)) = count.filter(|(_, count)| *count > 0) {
             row(key, count.to_string());
         }
+        if self.stats.token_cuts > 0 {
+            row("ui.stats.token_cuts", self.stats.token_cuts.to_string());
+        }
         if let Some(elapsed) = self.stats.translation {
             row("ui.stats.translation", duration(elapsed));
         }
         rows
+    }
+
+    /// What the pieces of a job are cut by.
+    fn cut_settings(&self) -> (Direction, Split, Option<usize>) {
+        (
+            self.settings.direction(),
+            self.settings.split,
+            self.settings.token_limit(),
+        )
     }
 
     fn languages(&self) -> Languages {
@@ -473,7 +501,8 @@ impl App {
         self.error = None;
         self.translations.clear();
         self.stats.translation = None;
-        self.job_cut = Some((self.settings.direction(), self.settings.split));
+        self.stats.token_cuts = 0;
+        self.job_cut = Some(self.cut_settings());
         self.job
     }
 
@@ -502,7 +531,7 @@ impl App {
                     self.paragraphs = paragraphs;
                     self.stats.recognition = Some(elapsed);
                     self.cut();
-                    let cut = Some((self.settings.direction(), self.settings.split));
+                    let cut = Some(self.cut_settings());
                     if !translating {
                         self.busy = false;
                         // Turned on after the worker had passed it by.
@@ -510,9 +539,15 @@ impl App {
                             self.retranslate();
                         }
                     } else if self.job_cut != cut {
-                        // The languages or the split changed during recognition.
+                        // The languages, the split or the limit changed during
+                        // recognition.
                         self.retranslate();
                     }
+                }
+                Response::Cut { id, units, cuts } if id == self.job => {
+                    self.units = units;
+                    self.translations.clear();
+                    self.stats.token_cuts = cuts;
                 }
                 Response::Translated { id, index, text } if id == self.job => {
                     // Turned off after the worker had started it.
@@ -587,6 +622,7 @@ impl App {
             origin: pixels.min,
             ocr: self.settings.ocr,
             split: self.settings.split,
+            token_limit: self.settings.token_limit(),
             languages: self.languages(),
         });
     }
@@ -596,15 +632,13 @@ impl App {
         if !self.settings.translate || self.paragraphs.is_empty() {
             return;
         }
-        let pieces = self
-            .units
-            .iter()
-            .flat_map(|unit| unit.pieces.iter().cloned())
-            .collect();
+        // The worker cuts them by the token limit again.
+        self.cut();
         let id = self.start_job();
         self.worker.send(Request::Translate {
             id,
-            pieces,
+            units: self.units.clone(),
+            token_limit: self.settings.token_limit(),
             languages: self.languages(),
         });
     }

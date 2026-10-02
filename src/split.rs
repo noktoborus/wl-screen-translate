@@ -88,14 +88,6 @@ pub fn units(paragraphs: &[Paragraph], split: Split) -> Vec<Unit> {
     }
 }
 
-/// Every piece of `paragraphs` cut `split`, in order.
-pub fn pieces(paragraphs: &[Paragraph], split: Split) -> Vec<String> {
-    units(paragraphs, split)
-        .into_iter()
-        .flat_map(|unit| unit.pieces)
-        .collect()
-}
-
 /// The sentences of `text`, by the rules of Unicode (UAX #29).
 fn sentences(text: &str) -> Vec<String> {
     text.split_sentence_bounds()
@@ -103,6 +95,48 @@ fn sentences(text: &str) -> Vec<String> {
         .filter(|sentence| !sentence.is_empty())
         .map(str::to_owned)
         .collect()
+}
+
+/// `text` cut into chunks of at most `max` tokens, as `count` counts them.
+///
+/// A chunk ends at the word boundary nearest the limit: a word goes into
+/// this chunk or the next. A word longer than the limit alone is cut between
+/// its letters. A text within the limit is one chunk.
+pub fn limit<E>(
+    text: &str,
+    max: usize,
+    mut count: impl FnMut(&str) -> Result<usize, E>,
+) -> Result<Vec<String>, E> {
+    if count(text)? <= max {
+        return Ok(vec![text.to_owned()]);
+    }
+    let mut chunks = Vec::new();
+    let mut chunk = String::new();
+    let close = |chunk: &mut String, chunks: &mut Vec<String>| {
+        let done = std::mem::take(chunk);
+        if !done.trim().is_empty() {
+            chunks.push(done.trim().to_owned());
+        }
+    };
+    for word in text.split_word_bounds() {
+        if count(format!("{chunk}{word}").trim())? <= max {
+            chunk.push_str(word);
+            continue;
+        }
+        close(&mut chunk, &mut chunks);
+        if count(word.trim())? <= max {
+            chunk.push_str(word.trim_start());
+            continue;
+        }
+        for letter in word.graphemes(true) {
+            if !chunk.is_empty() && count(&format!("{chunk}{letter}"))? > max {
+                close(&mut chunk, &mut chunks);
+            }
+            chunk.push_str(letter);
+        }
+    }
+    close(&mut chunk, &mut chunks);
+    Ok(chunks)
 }
 
 /// The pieces of one plate joined back, as written in the language `code`:
@@ -151,6 +185,50 @@ mod tests {
         assert_eq!(
             pieces(&paragraphs, Split::Sentences),
             ["One.", "Two.", "Three."]
+        );
+    }
+
+    /// Every piece of `paragraphs` cut `split`, in order.
+    fn pieces(paragraphs: &[Paragraph], split: Split) -> Vec<String> {
+        units(paragraphs, split)
+            .into_iter()
+            .flat_map(|unit| unit.pieces)
+            .collect()
+    }
+
+    /// One token a letter, as a tokenizer of letters would count.
+    fn letters(text: &str) -> Result<usize, ()> {
+        Ok(text.chars().count())
+    }
+
+    #[test]
+    fn a_text_within_the_limit_is_kept() {
+        assert_eq!(limit("one two", 7, letters), Ok(vec!["one two".to_owned()]));
+    }
+
+    #[test]
+    fn chunks_end_at_the_word_nearest_the_limit() {
+        assert_eq!(
+            limit("one two three four", 9, letters),
+            Ok(vec!["one two".into(), "three".into(), "four".into()])
+        );
+        assert_eq!(
+            limit("aa bb cc dd", 5, letters),
+            Ok(vec!["aa bb".into(), "cc dd".into()])
+        );
+    }
+
+    #[test]
+    fn a_word_longer_than_the_limit_is_cut_between_letters() {
+        assert_eq!(
+            limit("ab abcdefgh cd", 3, letters),
+            Ok(vec![
+                "ab".into(),
+                "abc".into(),
+                "def".into(),
+                "gh".into(),
+                "cd".into()
+            ])
         );
     }
 
