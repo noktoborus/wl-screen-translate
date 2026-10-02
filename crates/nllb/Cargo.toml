@@ -1,0 +1,11 @@
+[package]
+name = "nllb"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Translation with an NLLB-200 model converted for CTranslate2"
+
+[dependencies]
+ct2rs.workspace = true
+thiserror.workspace = true
+tokenizers.workspace = true

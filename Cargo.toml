@@ -1,0 +1,75 @@
+[workspace]
+members = [".", "crates/screen-ai", "crates/nllb"]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+[workspace.dependencies]
+screen-ai = { path = "crates/screen-ai" }
+nllb = { path = "crates/nllb" }
+plate-menu = { git = "https://github.com/noktoborus/zyterm", rev = "738d5bf67f96316ee91a76ad7cfb9b35a92017ae" }
+arboard = { version = "3.6.1", default-features = false, features = ["wayland-data-control"] }
+ashpd = { version = "0.13.13", default-features = false, features = ["async-io", "screenshot"] }
+ct2rs = { version = "0.10.1", default-features = false, features = ["ruy"] }
+directories = "6.0.0"
+eframe = { version = "0.36.2", features = ["wgpu"] }
+image = { version = "0.25.10", default-features = false, features = ["png"] }
+libloading = "0.9.0"
+log = "0.4.34"
+memmap2 = "0.9.11"
+pollster = "1.0.1"
+prost = "0.14.4"
+rust-i18n = "4.2.4"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_yaml_ng = "0.10.0"
+simple-log = "2.4.0"
+smithay-client-toolkit = { version = "0.19.2", default-features = false }
+sys-locale = "0.3.2"
+tempfile = "3.27.0"
+thiserror = "2.0.21"
+tokenizers = { version = "0.23.2", default-features = false, features = ["onig"] }
+unicode-segmentation = "1.13.3"
+url = "2.5.7"
+winit = { version = "0.30.13", default-features = false }
+xcap = "0.9.8"
+xxhash-rust = { version = "0.8.19", default-features = false, features = ["xxh3"] }
+
+[package]
+name = "wl-screen-translate"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+screen-ai.workspace = true
+nllb.workspace = true
+plate-menu.workspace = true
+directories.workspace = true
+eframe.workspace = true
+image.workspace = true
+log.workspace = true
+rust-i18n.workspace = true
+serde.workspace = true
+serde_yaml_ng.workspace = true
+simple-log.workspace = true
+sys-locale.workspace = true
+tempfile.workspace = true
+thiserror.workspace = true
+unicode-segmentation.workspace = true
+xxhash-rust.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+arboard.workspace = true
+ashpd.workspace = true
+libloading.workspace = true
+memmap2.workspace = true
+pollster.workspace = true
+smithay-client-toolkit.workspace = true
+url.workspace = true
+winit.workspace = true
+
+[target.'cfg(target_os = "windows")'.dependencies]
+xcap.workspace = true

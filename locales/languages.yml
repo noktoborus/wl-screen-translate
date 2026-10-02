@@ -1,0 +1,611 @@
+_version: 2
+
+# The name of each language of nllb::LANGUAGES in the language of the
+# interface: from the Unicode CLDR where it has one.
+
+language.ace_Arab:
+  en: "Acehnese"
+  ru: "ачехский"
+language.ace_Latn:
+  en: "Acehnese"
+  ru: "ачехский"
+language.acm_Arab:
+  en: "Mesopotamian Arabic"
+  ru: "месопотамский арабский"
+language.acq_Arab:
+  en: "Ta'izzi-Adeni Arabic"
+  ru: "таиззско-аденский арабский"
+language.aeb_Arab:
+  en: "Tunisian Arabic"
+  ru: "тунисский арабский"
+language.afr_Latn:
+  en: "Afrikaans"
+  ru: "африкаанс"
+language.ajp_Arab:
+  en: "South Levantine Arabic"
+  ru: "южнолевантийский арабский"
+language.aka_Latn:
+  en: "Akan"
+  ru: "акан"
+language.amh_Ethi:
+  en: "Amharic"
+  ru: "амхарский"
+language.apc_Arab:
+  en: "North Levantine Arabic"
+  ru: "северолевантийский арабский"
+language.arb_Arab:
+  en: "Arabic"
+  ru: "арабский"
+language.ars_Arab:
+  en: "Najdi Arabic"
+  ru: "недждийский арабский"
+language.ary_Arab:
+  en: "Moroccan Arabic"
+  ru: "марокканский арабский"
+language.arz_Arab:
+  en: "Egyptian Arabic"
+  ru: "египетский арабский"
+language.asm_Beng:
+  en: "Assamese"
+  ru: "ассамский"
+language.ast_Latn:
+  en: "Asturian"
+  ru: "астурийский"
+language.awa_Deva:
+  en: "Awadhi"
+  ru: "авадхи"
+language.ayr_Latn:
+  en: "Aymara"
+  ru: "аймара"
+language.azb_Arab:
+  en: "South Azerbaijani"
+  ru: "южноазербайджанский"
+language.azj_Latn:
+  en: "Azerbaijani"
+  ru: "азербайджанский"
+language.bak_Cyrl:
+  en: "Bashkir"
+  ru: "башкирский"
+language.bam_Latn:
+  en: "Bambara"
+  ru: "бамбара"
+language.ban_Latn:
+  en: "Balinese"
+  ru: "балийский"
+language.bel_Cyrl:
+  en: "Belarusian"
+  ru: "белорусский"
+language.bem_Latn:
+  en: "Bemba"
+  ru: "бемба"
+language.ben_Beng:
+  en: "Bengali"
+  ru: "бенгальский"
+language.bho_Deva:
+  en: "Bhojpuri"
+  ru: "бходжпури"
+language.bjn_Arab:
+  en: "Banjar"
+  ru: "банджарский"
+language.bjn_Latn:
+  en: "Banjar"
+  ru: "банджарский"
+language.bod_Tibt:
+  en: "Tibetan"
+  ru: "тибетский"
+language.bos_Latn:
+  en: "Bosnian"
+  ru: "боснийский"
+language.bug_Latn:
+  en: "Buginese"
+  ru: "бугийский"
+language.bul_Cyrl:
+  en: "Bulgarian"
+  ru: "болгарский"
+language.cat_Latn:
+  en: "Catalan"
+  ru: "каталанский"
+language.ceb_Latn:
+  en: "Cebuano"
+  ru: "себуано"
+language.ces_Latn:
+  en: "Czech"
+  ru: "чешский"
+language.cjk_Latn:
+  en: "Chokwe"
+  ru: "чокве"
+language.ckb_Arab:
+  en: "Central Kurdish"
+  ru: "центральнокурдский"
+language.crh_Latn:
+  en: "Crimean Tatar"
+  ru: "крымско-татарский"
+language.cym_Latn:
+  en: "Welsh"
+  ru: "валлийский"
+language.dan_Latn:
+  en: "Danish"
+  ru: "датский"
+language.deu_Latn:
+  en: "German"
+  ru: "немецкий"
+language.dik_Latn:
+  en: "Dinka"
+  ru: "динка"
+language.dyu_Latn:
+  en: "Dyula"
+  ru: "диула"
+language.dzo_Tibt:
+  en: "Dzongkha"
+  ru: "дзонг-кэ"
+language.ell_Grek:
+  en: "Greek"
+  ru: "греческий"
+language.eng_Latn:
+  en: "English"
+  ru: "английский"
+language.epo_Latn:
+  en: "Esperanto"
+  ru: "эсперанто"
+language.est_Latn:
+  en: "Estonian"
+  ru: "эстонский"
+language.eus_Latn:
+  en: "Basque"
+  ru: "баскский"
+language.ewe_Latn:
+  en: "Ewe"
+  ru: "эве"
+language.fao_Latn:
+  en: "Faroese"
+  ru: "фарерский"
+language.pes_Arab:
+  en: "Persian"
+  ru: "персидский"
+language.fij_Latn:
+  en: "Fijian"
+  ru: "фиджи"
+language.fin_Latn:
+  en: "Finnish"
+  ru: "финский"
+language.fon_Latn:
+  en: "Fon"
+  ru: "фон"
+language.fra_Latn:
+  en: "French"
+  ru: "французский"
+language.fur_Latn:
+  en: "Friulian"
+  ru: "фриульский"
+language.fuv_Latn:
+  en: "Nigerian Fulfulde"
+  ru: "нигерийский фульфульде"
+language.gla_Latn:
+  en: "Scottish Gaelic"
+  ru: "шотландский гэльский"
+language.gle_Latn:
+  en: "Irish"
+  ru: "ирландский"
+language.glg_Latn:
+  en: "Galician"
+  ru: "галисийский"
+language.grn_Latn:
+  en: "Guarani"
+  ru: "гуарани"
+language.guj_Gujr:
+  en: "Gujarati"
+  ru: "гуджарати"
+language.hat_Latn:
+  en: "Haitian Creole"
+  ru: "гаитянский креольский"
+language.hau_Latn:
+  en: "Hausa"
+  ru: "хауса"
+language.heb_Hebr:
+  en: "Hebrew"
+  ru: "иврит"
+language.hin_Deva:
+  en: "Hindi"
+  ru: "хинди"
+language.hne_Deva:
+  en: "Chhattisgarhi"
+  ru: "чхаттисгархи"
+language.hrv_Latn:
+  en: "Croatian"
+  ru: "хорватский"
+language.hun_Latn:
+  en: "Hungarian"
+  ru: "венгерский"
+language.hye_Armn:
+  en: "Armenian"
+  ru: "армянский"
+language.ibo_Latn:
+  en: "Igbo"
+  ru: "игбо"
+language.ilo_Latn:
+  en: "Iloko"
+  ru: "илоко"
+language.ind_Latn:
+  en: "Indonesian"
+  ru: "индонезийский"
+language.isl_Latn:
+  en: "Icelandic"
+  ru: "исландский"
+language.ita_Latn:
+  en: "Italian"
+  ru: "итальянский"
+language.jav_Latn:
+  en: "Javanese"
+  ru: "яванский"
+language.jpn_Jpan:
+  en: "Japanese"
+  ru: "японский"
+language.kab_Latn:
+  en: "Kabyle"
+  ru: "кабильский"
+language.kac_Latn:
+  en: "Kachin"
+  ru: "качинский"
+language.kam_Latn:
+  en: "Kamba"
+  ru: "камба"
+language.kan_Knda:
+  en: "Kannada"
+  ru: "каннада"
+language.kas_Arab:
+  en: "Kashmiri"
+  ru: "кашмири"
+language.kas_Deva:
+  en: "Kashmiri"
+  ru: "кашмири"
+language.kat_Geor:
+  en: "Georgian"
+  ru: "грузинский"
+language.knc_Arab:
+  en: "Kanuri"
+  ru: "канури"
+language.knc_Latn:
+  en: "Kanuri"
+  ru: "канури"
+language.kaz_Cyrl:
+  en: "Kazakh"
+  ru: "казахский"
+language.kbp_Latn:
+  en: "Kabiyè"
+  ru: "кабье"
+language.kea_Latn:
+  en: "Kabuverdianu"
+  ru: "кабувердьяну"
+language.khm_Khmr:
+  en: "Khmer"
+  ru: "кхмерский"
+language.kik_Latn:
+  en: "Kikuyu"
+  ru: "кикуйю"
+language.kin_Latn:
+  en: "Kinyarwanda"
+  ru: "киньяруанда"
+language.kir_Cyrl:
+  en: "Kyrgyz"
+  ru: "киргизский"
+language.kmb_Latn:
+  en: "Kimbundu"
+  ru: "кимбунду"
+language.kon_Latn:
+  en: "Kongo"
+  ru: "конго"
+language.kor_Hang:
+  en: "Korean"
+  ru: "корейский"
+language.kmr_Latn:
+  en: "Northern Kurdish"
+  ru: "курманджи"
+language.lao_Laoo:
+  en: "Lao"
+  ru: "лаосский"
+language.lvs_Latn:
+  en: "Latvian"
+  ru: "латышский"
+language.lij_Latn:
+  en: "Ligurian"
+  ru: "лигурский"
+language.lim_Latn:
+  en: "Limburgish"
+  ru: "лимбургский"
+language.lin_Latn:
+  en: "Lingala"
+  ru: "лингала"
+language.lit_Latn:
+  en: "Lithuanian"
+  ru: "литовский"
+language.lmo_Latn:
+  en: "Lombard"
+  ru: "ломбардский"
+language.ltg_Latn:
+  en: "Latgalian"
+  ru: "латгальский"
+language.ltz_Latn:
+  en: "Luxembourgish"
+  ru: "люксембургский"
+language.lua_Latn:
+  en: "Luba-Lulua"
+  ru: "луба-лулуа"
+language.lug_Latn:
+  en: "Ganda"
+  ru: "ганда"
+language.luo_Latn:
+  en: "Luo"
+  ru: "луо"
+language.lus_Latn:
+  en: "Mizo"
+  ru: "мизо"
+language.mag_Deva:
+  en: "Magahi"
+  ru: "магахи"
+language.mai_Deva:
+  en: "Maithili"
+  ru: "майтхили"
+language.mal_Mlym:
+  en: "Malayalam"
+  ru: "малаялам"
+language.mar_Deva:
+  en: "Marathi"
+  ru: "маратхи"
+language.min_Latn:
+  en: "Minangkabau"
+  ru: "минангкабау"
+language.mkd_Cyrl:
+  en: "Macedonian"
+  ru: "македонский"
+language.plt_Latn:
+  en: "Malagasy"
+  ru: "малагасийский"
+language.mlt_Latn:
+  en: "Maltese"
+  ru: "мальтийский"
+language.mni_Beng:
+  en: "Manipuri"
+  ru: "манипурский"
+language.khk_Cyrl:
+  en: "Mongolian"
+  ru: "монгольский"
+language.mos_Latn:
+  en: "Mossi"
+  ru: "моси"
+language.mri_Latn:
+  en: "Māori"
+  ru: "маори"
+language.zsm_Latn:
+  en: "Malay"
+  ru: "малайский"
+language.mya_Mymr:
+  en: "Burmese"
+  ru: "бирманский"
+language.nld_Latn:
+  en: "Dutch"
+  ru: "нидерландский"
+language.nno_Latn:
+  en: "Norwegian Nynorsk"
+  ru: "нюнорск"
+language.nob_Latn:
+  en: "Norwegian Bokmål"
+  ru: "норвежский букмол"
+language.npi_Deva:
+  en: "Nepali"
+  ru: "непальский"
+language.nso_Latn:
+  en: "Northern Sotho"
+  ru: "северный сото"
+language.nus_Latn:
+  en: "Nuer"
+  ru: "нуэр"
+language.nya_Latn:
+  en: "Nyanja"
+  ru: "ньянджа"
+language.oci_Latn:
+  en: "Occitan"
+  ru: "окситанский"
+language.gaz_Latn:
+  en: "Oromo"
+  ru: "оромо"
+language.ory_Orya:
+  en: "Odia"
+  ru: "ория"
+language.pag_Latn:
+  en: "Pangasinan"
+  ru: "пангасинан"
+language.pan_Guru:
+  en: "Punjabi"
+  ru: "панджаби"
+language.pap_Latn:
+  en: "Papiamento"
+  ru: "папьяменто"
+language.pol_Latn:
+  en: "Polish"
+  ru: "польский"
+language.por_Latn:
+  en: "Portuguese"
+  ru: "португальский"
+language.prs_Arab:
+  en: "Dari"
+  ru: "дари"
+language.pbt_Arab:
+  en: "Southern Pashto"
+  ru: "южный пушту"
+language.quy_Latn:
+  en: "Ayacucho Quechua"
+  ru: "аякучо кечуа"
+language.ron_Latn:
+  en: "Romanian"
+  ru: "румынский"
+language.run_Latn:
+  en: "Rundi"
+  ru: "рунди"
+language.rus_Cyrl:
+  en: "Russian"
+  ru: "русский"
+language.sag_Latn:
+  en: "Sango"
+  ru: "санго"
+language.san_Deva:
+  en: "Sanskrit"
+  ru: "санскрит"
+language.sat_Beng:
+  en: "Santali"
+  ru: "сантали"
+language.scn_Latn:
+  en: "Sicilian"
+  ru: "сицилийский"
+language.shn_Mymr:
+  en: "Shan"
+  ru: "шанский"
+language.sin_Sinh:
+  en: "Sinhala"
+  ru: "сингальский"
+language.slk_Latn:
+  en: "Slovak"
+  ru: "словацкий"
+language.slv_Latn:
+  en: "Slovenian"
+  ru: "словенский"
+language.smo_Latn:
+  en: "Samoan"
+  ru: "самоанский"
+language.sna_Latn:
+  en: "Shona"
+  ru: "шона"
+language.snd_Arab:
+  en: "Sindhi"
+  ru: "синдхи"
+language.som_Latn:
+  en: "Somali"
+  ru: "сомали"
+language.sot_Latn:
+  en: "Southern Sotho"
+  ru: "южный сото"
+language.spa_Latn:
+  en: "Spanish"
+  ru: "испанский"
+language.als_Latn:
+  en: "Albanian"
+  ru: "албанский"
+language.srd_Latn:
+  en: "Sardinian"
+  ru: "сардинский"
+language.srp_Cyrl:
+  en: "Serbian"
+  ru: "сербский"
+language.ssw_Latn:
+  en: "Swati"
+  ru: "свази"
+language.sun_Latn:
+  en: "Sundanese"
+  ru: "сунданский"
+language.swe_Latn:
+  en: "Swedish"
+  ru: "шведский"
+language.swh_Latn:
+  en: "Swahili"
+  ru: "суахили"
+language.szl_Latn:
+  en: "Silesian"
+  ru: "силезский"
+language.tam_Taml:
+  en: "Tamil"
+  ru: "тамильский"
+language.tat_Cyrl:
+  en: "Tatar"
+  ru: "татарский"
+language.tel_Telu:
+  en: "Telugu"
+  ru: "телугу"
+language.tgk_Cyrl:
+  en: "Tajik"
+  ru: "таджикский"
+language.tgl_Latn:
+  en: "Tagalog"
+  ru: "тагальский"
+language.tha_Thai:
+  en: "Thai"
+  ru: "тайский"
+language.tir_Ethi:
+  en: "Tigrinya"
+  ru: "тигринья"
+language.taq_Latn:
+  en: "Tamasheq"
+  ru: "тамашек"
+language.taq_Tfng:
+  en: "Tamasheq"
+  ru: "тамашек"
+language.tpi_Latn:
+  en: "Tok Pisin"
+  ru: "ток-писин"
+language.tsn_Latn:
+  en: "Tswana"
+  ru: "тсвана"
+language.tso_Latn:
+  en: "Tsonga"
+  ru: "тсонга"
+language.tuk_Latn:
+  en: "Turkmen"
+  ru: "туркменский"
+language.tum_Latn:
+  en: "Tumbuka"
+  ru: "тумбука"
+language.tur_Latn:
+  en: "Turkish"
+  ru: "турецкий"
+language.twi_Latn:
+  en: "Twi"
+  ru: "тви"
+language.tzm_Tfng:
+  en: "Central Atlas Tamazight"
+  ru: "среднеатласский тамазигхтский"
+language.uig_Arab:
+  en: "Uyghur"
+  ru: "уйгурский"
+language.ukr_Cyrl:
+  en: "Ukrainian"
+  ru: "украинский"
+language.umb_Latn:
+  en: "Umbundu"
+  ru: "умбунду"
+language.urd_Arab:
+  en: "Urdu"
+  ru: "урду"
+language.uzn_Latn:
+  en: "Uzbek"
+  ru: "узбекский"
+language.vec_Latn:
+  en: "Venetian"
+  ru: "венетский"
+language.vie_Latn:
+  en: "Vietnamese"
+  ru: "вьетнамский"
+language.war_Latn:
+  en: "Waray"
+  ru: "варай"
+language.wol_Latn:
+  en: "Wolof"
+  ru: "волоф"
+language.xho_Latn:
+  en: "Xhosa"
+  ru: "коса"
+language.ydd_Hebr:
+  en: "Yiddish"
+  ru: "идиш"
+language.yor_Latn:
+  en: "Yoruba"
+  ru: "йоруба"
+language.yue_Hant:
+  en: "Cantonese"
+  ru: "кантонский"
+language.zho_Hans:
+  en: "Chinese (Simplified)"
+  ru: "китайский (упрощённый)"
+language.zho_Hant:
+  en: "Chinese (Traditional)"
+  ru: "китайский (традиционный)"
+language.zul_Latn:
+  en: "Zulu"
+  ru: "зулу"

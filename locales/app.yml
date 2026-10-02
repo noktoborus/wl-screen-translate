@@ -1,0 +1,92 @@
+_version: 2
+
+ui.hint:
+  en: "Drag to select a region · Esc or right click to quit"
+  ru: "Выделите область мышью · Esc или ПКМ — выход"
+ui.languages:
+  en: Languages
+  ru: Языки
+ui.source:
+  en: From
+  ru: С
+ui.target:
+  en: To
+  ru: На
+ui.translate:
+  en: Translate
+  ru: Переводить
+ui.copy:
+  en: Copy and quit
+  ru: Копировать и выйти
+ui.pick_split:
+  en: How to cut the text for translation
+  ru: Как делить текст для перевода
+ui.split.whole:
+  en: Do not split
+  ru: Не делить
+ui.split.paragraphs:
+  en: Split into paragraphs
+  ru: Делить на абзацы
+ui.split.sentences:
+  en: Split into sentences
+  ru: Делить на предложения
+ui.stats.total:
+  en: Total area
+  ru: Общая область
+ui.stats.selected:
+  en: Selected
+  ru: Выделено
+ui.stats.pixels:
+  en: "%{width}x%{height} pixels"
+  ru: "%{width}x%{height} пикселей"
+ui.stats.recognition:
+  en: Recognition time
+  ru: Время распознавания
+ui.stats.letters:
+  en: Characters recognised
+  ru: Распознано символов
+ui.stats.paragraphs:
+  en: Paragraphs
+  ru: Абзацы
+ui.stats.sentences:
+  en: Sentences
+  ru: Предложения
+ui.stats.translation:
+  en: Translation time
+  ru: Время перевода
+ui.stats.ms:
+  en: "%{n} ms"
+  ru: "%{n} мс"
+ui.stats.s:
+  en: "%{n} s"
+  ru: "%{n} с"
+ui.pick_source:
+  en: The language of the text
+  ru: Язык текста
+ui.pick_target:
+  en: The language to translate to
+  ru: Язык перевода
+error.no_home:
+  en: No home directory to keep settings and models in.
+  ru: Нет домашнего каталога для настроек и моделей.
+error.capture:
+  en: The screen could not be captured.
+  ru: Не удалось сделать снимок экрана.
+error.settings:
+  en: The settings could not be saved.
+  ru: Не удалось сохранить настройки.
+error.ocr_load:
+  en: Screen AI could not be loaded. Check its files, see README.md.
+  ru: Не удалось загрузить Screen AI. Проверьте его файлы, см. README.md.
+error.ocr:
+  en: The text could not be recognised.
+  ru: Не удалось распознать текст.
+error.translator_load:
+  en: The NLLB model could not be loaded. Check its files, see README.md.
+  ru: Не удалось загрузить модель NLLB. Проверьте её файлы, см. README.md.
+error.translate:
+  en: The text could not be translated.
+  ru: Не удалось перевести текст.
+error.window:
+  en: The window could not be opened.
+  ru: Не удалось открыть окно.

@@ -1,0 +1,12 @@
+[package]
+name = "screen-ai"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Text recognition through the Chrome Screen AI library"
+
+[dependencies]
+image.workspace = true
+libloading.workspace = true
+prost.workspace = true
+thiserror.workspace = true
