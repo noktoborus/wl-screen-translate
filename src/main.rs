@@ -1,4 +1,8 @@
 //! Translates the text of a screen region: capture, select, recognise, translate.
+#![cfg_attr(
+    all(target_os = "windows", not(debug_assertions)),
+    windows_subsystem = "windows"
+)]
 
 mod cache;
 mod capture;
